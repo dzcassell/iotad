@@ -9,9 +9,10 @@ devices would emit: gratuitous ARP, DHCP with vendor fingerprints, mDNS, SSDP,
 LLDP/CDP, OT discovery/poll protocols (BACnet, EtherNet/IP, PROFINET-DCP,
 Modbus, S7), and outbound DNS/NTP/TLS check-ins.
 
-It does NOT assign IPs to the host or answer active scans -- it is a passive
-emitter. Every frame carries a spoofed source MAC/IP, so run it ONLY on a lab
-segment you own and are authorized to test. See README.md.
+It does not assign simulated IPs to the host, but it does answer authorized
+active discovery probes and emits complete synthetic protocol exchanges. Every
+frame carries a spoofed source MAC/IP, so run it ONLY on a lab segment you own
+and are authorized to test. See README.md.
 
     iotad.py --config /etc/iotad.conf        # run (foreground; systemd manages it)
     iotad.py --list                          # print the device roster and exit
@@ -21,6 +22,7 @@ segment you own and are authorized to test. See README.md.
 import argparse
 import configparser
 import ipaddress
+import json
 import logging
 import os
 import random
@@ -29,8 +31,10 @@ import signal
 import socket
 import struct
 import sys
+import threading
 import time
 import uuid
+import zlib
 from heapq import heappush, heappop
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -41,7 +45,8 @@ logging.getLogger("scapy").setLevel(logging.ERROR)
 try:
     from scapy.all import (
         Ether, ARP, IP, ICMP, UDP, TCP, BOOTP, DHCP, DNS, DNSQR, DNSRR, DNSRRSRV,
-        NTP, LLC, SNAP, Raw, conf, getmacbyip, checksum, AsyncSniffer,
+        NTP, LLC, SNAP, Raw, Dot1Q, conf, checksum, AsyncSniffer, srp1,
+        get_if_addr, get_if_hwaddr, PcapWriter, rdpcap,
     )
 except Exception as e:  # pragma: no cover
     sys.exit(f"iotad: scapy import failed ({e}); install into the venv:\n"
@@ -85,11 +90,63 @@ BEACON_INTERVAL = {
     "fox": ("poll_interval", 90),
     "iec104": ("poll_interval", 90),
     "melsec": ("poll_interval", 90),
+    "hartip": ("poll_interval", 90),
+    "cip_safety": ("poll_interval", 90),
+    "dicom": ("poll_interval", 90),
+    "hl7": ("poll_interval", 90),
+    "mqtt": ("poll_interval", 90),
+    "coap": ("poll_interval", 90),
+    "knx": ("discovery_interval", 120),
+    "iec61850": ("poll_interval", 90),
+    "mtconnect": ("poll_interval", 90),
+    "scenario_event": ("event_interval", 600),
     "fins": ("discovery_interval", 120),
+    "ntp": ("ntp_interval", 900),
     "dns_checkin": ("checkin", 0),
     "tls_checkin": ("checkin", 0),
 }
 WAN_BEACONS = {"tls_checkin"}  # only run these when outbound scope includes WAN
+
+FACILITY_CATEGORIES = {
+    "industrial": {"plc", "rtu", "hmi", "industrial_networking", "drive",
+                   "robotics", "safety", "instrumentation", "power"},
+    "manufacturing": {"plc", "hmi", "industrial_networking", "drive",
+                      "robotics", "safety", "instrumentation", "printer"},
+    "cleanroom": {"cleanroom", "environmental", "hvac", "building_automation",
+                  "instrumentation", "power", "access_control"},
+    "medical": {"medical", "environmental", "hvac", "building_automation",
+                "power", "access_control", "printer", "voip"},
+    "water": {"water_treatment", "instrumentation", "plc", "drive", "rtu",
+              "environmental", "power"},
+    "building": {"hvac", "building_automation", "lighting", "access_control",
+                 "intercom", "power", "environmental", "networking"},
+}
+FACILITY_WEIGHTS = {
+    "pharma_cleanroom": {"cleanroom": 12, "environmental": 8, "hvac": 7,
+                          "building_automation": 6, "instrumentation": 5,
+                          "water_treatment": 4, "plc": 3, "drive": 2,
+                          "power": 2, "access_control": 2, "networking": 1},
+    "hospital": {"medical": 12, "building_automation": 5, "hvac": 5,
+                 "environmental": 4, "power": 3, "access_control": 3,
+                 "printer": 3, "voip": 3, "networking": 2},
+    "automotive": {"robotics": 10, "plc": 9, "safety": 7, "drive": 6,
+                   "hmi": 4, "industrial_networking": 4,
+                   "instrumentation": 3, "printer": 1, "power": 1},
+    "water_treatment": {"water_treatment": 10, "instrumentation": 8,
+                        "plc": 6, "drive": 6, "rtu": 4,
+                        "environmental": 3, "power": 2,
+                        "industrial_networking": 2},
+}
+# Preserve the original concise preset names as weighted aliases.
+for _name, _cats in list(FACILITY_CATEGORIES.items()):
+    FACILITY_WEIGHTS[_name] = {category: 1 for category in _cats}
+SCENARIO_CADENCE = {
+    "baseline": 1.0,
+    "commissioning": 0.45,
+    "production": 0.8,
+    "maintenance": 0.6,
+    "incident": 0.3,
+}
 
 
 # ---- configuration ---------------------------------------------------------
@@ -98,14 +155,18 @@ class Site:
     Socket. Devices belong to a site; cross-site flows route via the site's
     gateway (Socket) so they traverse the WAN."""
 
-    def __init__(self, name, interface, subnet, gateway, ip_start, ip_end):
+    def __init__(self, name, interface, subnet, gateway, ip_start, ip_end,
+                 vlan=0, zone=None):
         self.name = name
         self.interface = interface
         self.subnet = ipaddress.ip_network(subnet, strict=False)
         self.gateway = gateway
         self.ip_start = ipaddress.ip_address(ip_start)
         self.ip_end = ipaddress.ip_address(ip_end)
+        self.vlan = int(vlan or 0)
+        self.zone = zone or name
         self.gw_mac = None                 # resolved at runtime
+        self.dns_server = None
         self.mac_cache = {}
 
     def pool(self):
@@ -118,7 +179,7 @@ class Site:
 
 class Config:
     def __init__(self, path):
-        cp = configparser.ConfigParser()
+        cp = configparser.ConfigParser(inline_comment_prefixes=("#", ";"))
         cp.read_dict(self.defaults())
         if path and os.path.exists(path):
             cp.read(path)
@@ -132,18 +193,23 @@ class Config:
                 s = cp[sec]
                 self.sites.append(Site(
                     sec.split(":", 1)[1], s.get("interface"), s.get("subnet"),
-                    s.get("gateway"), s.get("ip_pool_start"), s.get("ip_pool_end")))
+                    s.get("gateway"), s.get("ip_pool_start"), s.get("ip_pool_end"),
+                    s.getint("vlan", fallback=0), s.get("zone", fallback=None)))
         else:
             n = cp["network"]
             self.sites.append(Site(
                 "site1", n.get("interface"), n.get("subnet"), n.get("gateway"),
-                n.get("ip_pool_start"), n.get("ip_pool_end")))
+                n.get("ip_pool_start"), n.get("ip_pool_end"),
+                n.getint("vlan", fallback=0), n.get("zone", fallback="site1")))
         # First site's interface is the default for anything single-homed.
         self.interface = self.sites[0].interface
 
         s = cp["simulation"]
         self.device_count = s.getint("device_count")
         self.seed = s.getint("seed")
+        self.facility = s.get("facility", "mixed").strip().lower()
+        self.scenario = s.get("scenario", "baseline").strip().lower()
+        self.events_enabled = s.getboolean("events_enabled", fallback=True)
         cats = s.get("categories", "").strip()
         self.categories = [c.strip() for c in cats.split(",") if c.strip()]
         # Fraction of OT polls aimed at a peer on ANOTHER site (WAN traffic).
@@ -154,6 +220,9 @@ class Config:
         self.outbound_scope = o.get("scope").strip().lower()  # subnet|wan|both
         self.dns_server = o.get("dns_server")
         self.ntp_server = o.get("ntp_server")
+        for site in self.sites:
+            sec = f"site:{site.name}" if f"site:{site.name}" in cp else "network"
+            site.dns_server = cp[sec].get("dns_server", fallback=self.dns_server)
 
         self.timing = cp["timing"]
         r = cp["runtime"]
@@ -161,6 +230,50 @@ class Config:
         self.logfile = r.get("logfile")
         self.dry_run = r.getboolean("dry_run")
         self.rate_limit = r.getint("max_pps")
+        self.metrics_file = r.get("metrics_file", "/run/iotad/metrics.json")
+        self.metrics_interval = r.getint("metrics_interval", fallback=30)
+        self._validate()
+
+    def _validate(self):
+        if self.device_count <= 0:
+            raise ValueError("simulation.device_count must be greater than zero")
+        if self.facility != "mixed" and self.facility not in FACILITY_WEIGHTS:
+            choices = ", ".join(["mixed"] + sorted(FACILITY_WEIGHTS))
+            raise ValueError(f"simulation.facility must be one of: {choices}")
+        if self.scenario not in SCENARIO_CADENCE:
+            raise ValueError("simulation.scenario must be one of: " +
+                             ", ".join(sorted(SCENARIO_CADENCE)))
+        if not 0.0 <= self.cross_site_ratio <= 1.0:
+            raise ValueError("simulation.cross_site_ratio must be between 0 and 1")
+        if self.outbound_scope not in ("subnet", "wan", "both"):
+            raise ValueError("outbound.scope must be subnet, wan, or both")
+        if self.rate_limit <= 0:
+            raise ValueError("runtime.max_pps must be greater than zero")
+        names = set()
+        for site in self.sites:
+            if not site.name or site.name in names:
+                raise ValueError(f"site names must be non-empty and unique: {site.name!r}")
+            names.add(site.name)
+            gateway = ipaddress.ip_address(site.gateway)
+            if site.ip_start.version != site.subnet.version or site.ip_end.version != site.subnet.version:
+                raise ValueError(f"site '{site.name}' address family does not match its subnet")
+            if site.ip_start > site.ip_end:
+                raise ValueError(f"site '{site.name}' ip_pool_start exceeds ip_pool_end")
+            if site.ip_start not in site.subnet or site.ip_end not in site.subnet:
+                raise ValueError(f"site '{site.name}' IP pool must be inside {site.subnet}")
+            if gateway not in site.subnet:
+                raise ValueError(f"site '{site.name}' gateway must be inside {site.subnet}")
+            if site.vlan not in range(0, 4095):
+                raise ValueError(f"site '{site.name}' vlan must be 0 or 1..4094")
+            if site.ip_start in (site.subnet.network_address, site.subnet.broadcast_address) or \
+                    site.ip_end in (site.subnet.network_address, site.subnet.broadcast_address):
+                raise ValueError(f"site '{site.name}' IP pool cannot include network/broadcast addresses")
+        lo = self.timing.getint("checkin_min")
+        hi = self.timing.getint("checkin_max")
+        if lo <= 0 or hi < lo:
+            raise ValueError("timing checkin_min/checkin_max range is invalid")
+        if self.metrics_interval <= 0:
+            raise ValueError("runtime.metrics_interval must be greater than zero")
 
     @staticmethod
     def defaults():
@@ -170,12 +283,15 @@ class Config:
                 "gateway": "192.168.40.1",
                 "ip_pool_start": "192.168.40.50", "ip_pool_end": "192.168.40.229",
             },
-            "simulation": {"device_count": "80", "seed": "1337", "categories": ""},
+            "simulation": {"device_count": "80", "seed": "1337", "facility": "mixed",
+                           "scenario": "baseline", "categories": ""},
             "timing": {
                 "arp_interval": "300", "dhcp_interval": "1800", "mdns_interval": "120",
                 "ssdp_interval": "180", "lldp_interval": "30", "cdp_interval": "60",
                 "discovery_interval": "120", "poll_interval": "90",
+                "ntp_interval": "900",
                 "checkin_min": "180", "checkin_max": "900",
+                "event_interval": "600",
             },
             "outbound": {
                 "enabled": "true", "scope": "both",
@@ -184,6 +300,7 @@ class Config:
             "runtime": {
                 "pidfile": "/run/iotad.pid", "logfile": "",
                 "dry_run": "false", "max_pps": "50",
+                "metrics_file": "/run/iotad/metrics.json", "metrics_interval": "30",
             },
         }
 
@@ -201,6 +318,14 @@ class Device:
         self.site = site
 
 
+class WireFrame:
+    """A crafted frame plus the physical interface it must leave on."""
+    __slots__ = ("pkt", "iface")
+
+    def __init__(self, pkt, iface):
+        self.pkt, self.iface = pkt, iface
+
+
 def build_roster(catalog, cfg):
     """Deterministically create the device list (same seed -> same roster).
 
@@ -212,6 +337,9 @@ def build_roster(catalog, cfg):
     profiles = catalog["profiles"]
     if cfg.categories:
         profiles = [p for p in profiles if p["category"] in cfg.categories]
+    elif cfg.facility != "mixed":
+        allowed = set(FACILITY_WEIGHTS[cfg.facility])
+        profiles = [p for p in profiles if p["category"] in allowed]
     if not profiles:
         sys.exit("iotad: no catalog profiles match the configured categories")
 
@@ -237,7 +365,12 @@ def build_roster(catalog, cfg):
         for si, site in enumerate(cfg.sites):
             if slot >= counts[si]:
                 continue
-            p = rng.choice(profiles)
+            if cfg.categories or cfg.facility == "mixed":
+                p = rng.choice(profiles)
+            else:
+                weights = [FACILITY_WEIGHTS[cfg.facility][p["category"]]
+                           for p in profiles]
+                p = rng.choices(profiles, weights=weights, k=1)[0]
             oui = rng.choice(p["ouis"])
             nic = "%02x:%02x:%02x" % (rng.randint(0, 255), rng.randint(0, 255),
                                       rng.randint(0, 255))
@@ -261,8 +394,19 @@ class Tx:
         self.sent = 0
         self.by_beacon = {}
         self._socks = {}
-        self._window_start = time.monotonic()
-        self._window_count = 0
+        self._rate_lock = threading.Lock()
+        self._tokens = float(cfg.rate_limit)
+        self._token_time = time.monotonic()
+        self._pcap = PcapWriter(cfg.pcap_path, append=False, sync=True) \
+            if getattr(cfg, "pcap_path", None) else None
+        self.failures = 0
+        self.throttle_waits = 0
+        self._vlan_by_iface = {}
+        for site in cfg.sites:
+            prior = self._vlan_by_iface.get(site.interface, site.vlan)
+            if prior != site.vlan:
+                raise ValueError("sites sharing an interface must use the same VLAN")
+            self._vlan_by_iface[site.interface] = site.vlan
         if not cfg.dry_run:
             conf.iface = cfg.interface
             conf.verb = 0
@@ -271,24 +415,47 @@ class Tx:
                     self._socks[site.interface] = conf.L2socket(iface=site.interface)
 
     def send(self, beacon, pkt, iface=None):
-        self.by_beacon[beacon] = self.by_beacon.get(beacon, 0) + 1
-        self.sent += 1
+        with self._rate_lock:
+            self.by_beacon[beacon] = self.by_beacon.get(beacon, 0) + 1
+            self.sent += 1
+        iface = iface or self.cfg.interface
+        vlan = self._vlan_by_iface.get(iface, 0)
+        if vlan and pkt.haslayer(Ether) and not pkt.haslayer(Dot1Q):
+            eth = pkt[Ether]
+            pkt = (Ether(src=eth.src, dst=eth.dst, type=0x8100) /
+                   Dot1Q(vlan=vlan, type=eth.type) / eth.payload)
         if self.cfg.dry_run:
+            if self._pcap:
+                with self._rate_lock:
+                    self._pcap.write(pkt)
             log.info("DRY  %-14s %s", beacon, pkt.summary())
             return
-        # crude token-bucket so a burst can't flood the segment
-        now = time.monotonic()
-        if now - self._window_start >= 1.0:
-            self._window_start, self._window_count = now, 0
-        if self._window_count >= self.cfg.rate_limit:
-            time.sleep(max(0.0, 1.0 - (now - self._window_start)))
-            self._window_start, self._window_count = time.monotonic(), 0
-        self._window_count += 1
+        # Shared monotonic token bucket. Responder traffic uses this path too.
+        while True:
+            with self._rate_lock:
+                now = time.monotonic()
+                elapsed = now - self._token_time
+                self._tokens = min(float(self.cfg.rate_limit),
+                                   self._tokens + elapsed * self.cfg.rate_limit)
+                self._token_time = now
+                if self._tokens >= 1.0:
+                    self._tokens -= 1.0
+                    break
+                wait = (1.0 - self._tokens) / self.cfg.rate_limit
+                self.throttle_waits += 1
+            time.sleep(min(wait, 0.05))
         sock = self._socks.get(iface) or self._socks.get(self.cfg.interface)
         try:
             sock.send(pkt)
         except Exception as e:
+            self.failures += 1
             log.warning("send failed (%s): %s", beacon, e)
+
+    def snapshot(self):
+        with self._rate_lock:
+            return {"sent": self.sent, "by_beacon": dict(self.by_beacon),
+                    "send_failures": self.failures,
+                    "throttle_waits": self.throttle_waits}
 
     def close(self):
         for s in self._socks.values():
@@ -296,6 +463,8 @@ class Tx:
                 s.close()
             except Exception:
                 pass
+        if self._pcap:
+            self._pcap.close()
 
 
 # ---- emitters --------------------------------------------------------------
@@ -308,9 +477,16 @@ class Emitters:
         # index devices by (site, listening-port) for cross-site peer targeting
         self.listeners = {}
         for d in roster:
-            for port in d.profile.get("ports", []):
+            for port in set(d.profile.get("ports", [])) | set(d.profile.get("udp_ports", [])):
                 self.listeners.setdefault(port, []).append(d)
         self.ntp_ip = None
+        self.host_ips = {}
+        self._event_seq = 0
+        for dev in roster:
+            for host in dev.profile.get("checkin", []) or []:
+                # Deterministic TEST-NET-3 destination: SNI/DNS stays realistic,
+                # but the simulator never contacts a real vendor service.
+                self.host_ips[host] = "203.0.113.%d" % (1 + zlib.crc32(host.encode()) % 253)
         self._resolve_infra()
 
     # -- infrastructure resolution --
@@ -318,11 +494,11 @@ class Emitters:
         if self.cfg.dry_run:
             for site in self.cfg.sites:
                 site.gw_mac = "de:ad:be:ef:00:01"
-            return
-        for site in self.cfg.sites:
-            site.gw_mac = self._mac_for_ip(site, site.gateway) or BCAST_MAC
-            log.info("site '%s' gateway %s is at %s",
-                     site.name, site.gateway, site.gw_mac)
+        else:
+            for site in self.cfg.sites:
+                site.gw_mac = self._mac_for_ip(site, site.gateway) or BCAST_MAC
+                log.info("site '%s' gateway %s is at %s",
+                         site.name, site.gateway, site.gw_mac)
         try:
             self.ntp_ip = socket.gethostbyname(self.cfg.ntp_server)
         except Exception:
@@ -340,7 +516,11 @@ class Emitters:
         if ip in site.mac_cache:
             return site.mac_cache[ip]
         try:
-            m = getmacbyip(ip)
+            probe = (Ether(src=get_if_hwaddr(site.interface), dst=BCAST_MAC) /
+                     ARP(op=1, hwsrc=get_if_hwaddr(site.interface),
+                         psrc=get_if_addr(site.interface), pdst=ip))
+            ans = srp1(probe, iface=site.interface, timeout=1, verbose=False)
+            m = ans[ARP].hwsrc if ans and ans.haslayer(ARP) else None
         except Exception:
             m = None
         site.mac_cache[ip] = m
@@ -414,9 +594,18 @@ class Emitters:
         for svc in dev.profile.get("mdns", []):
             inst = f"{dev.hostname}.{svc}.local"
             port = SERVICE_PORTS.get(svc, 80)
-            an = (DNSRR(rrname=f"{svc}.local", type="PTR", ttl=120, rdata=inst) /
-                  DNSRR(rrname=f"{dev.hostname}.local", type="A", ttl=120, rdata=dev.ip))
-            dns = DNS(qr=1, aa=1, qd=None, an=an, ancount=2)
+            idy = dev.profile["identity"]
+            records = [
+                DNSRR(rrname=f"{svc}.local", type="PTR", ttl=120, rdata=inst),
+                DNSRRSRV(rrname=inst, ttl=120, priority=0, weight=0, port=port,
+                         target=f"{dev.hostname}.local"),
+                DNSRR(rrname=inst, type="TXT", ttl=120,
+                      rdata=[b"model=" + idy["product"].encode(),
+                             b"vendor=" + idy["vendor"].encode(),
+                             b"fw=" + idy["revision"].encode()]),
+                DNSRR(rrname=f"{dev.hostname}.local", type="A", ttl=120, rdata=dev.ip),
+            ]
+            dns = DNS(qr=1, aa=1, qd=[], an=records, ancount=len(records))
             pkts.append(Ether(src=dev.mac, dst=MDNS_MCAST_MAC) /
                         IP(src=dev.ip, dst="224.0.0.251", ttl=255) /
                         UDP(sport=5353, dport=5353) / dns)
@@ -539,29 +728,103 @@ class Emitters:
             dst_mac = dev.site.gw_mac or BCAST_MAC
         return (Ether(src=dev.mac, dst=dst_mac) /
                 IP(src=dev.ip, dst=peer.ip) /
-                TCP(sport=random.randint(1024, 65535), dport=port,
-                    flags="S", seq=random.randint(0, 0xFFFFFFFF)))
+                 TCP(sport=random.randint(1024, 65535), dport=port,
+                     flags="S", seq=random.randint(0, 0xFFFFFFFF)))
+
+    def _tcp_exchange(self, dev, port, request, response):
+        """Emit a compact, internally consistent TCP application exchange.
+
+        For cross-site traffic, client-side frames leave the client's interface
+        and server-side frames leave the peer's interface, so both Cato Sockets
+        observe their half of the routed conversation.
+        """
+        peer = self._pick_peer(dev, port)
+        if not peer:
+            return None
+        remote = peer.site is not dev.site
+        if remote and not self._wan_ok():
+            return None
+        if not remote and not self._sub_ok():
+            return None
+        c_dst = (peer.site.gw_mac if remote else peer.mac) or BCAST_MAC
+        s_dst = (dev.site.gw_mac if remote else dev.mac) or BCAST_MAC
+        sport = random.randint(20000, 60000)
+        cseq = random.randint(1, 0x7FFFFFFF)
+        sseq = random.randint(1, 0x7FFFFFFF)
+
+        def c(flags, seq, ack=0, data=b""):
+            p = (Ether(src=dev.mac, dst=c_dst) / IP(src=dev.ip, dst=peer.ip) /
+                 TCP(sport=sport, dport=port, flags=flags, seq=seq, ack=ack))
+            return WireFrame(p / Raw(data) if data else p, dev.site.interface)
+
+        def s(flags, seq, ack=0, data=b""):
+            p = (Ether(src=peer.mac, dst=s_dst) / IP(src=peer.ip, dst=dev.ip) /
+                 TCP(sport=port, dport=sport, flags=flags, seq=seq, ack=ack))
+            return WireFrame(p / Raw(data) if data else p, peer.site.interface)
+
+        return [
+            c("S", cseq),
+            s("SA", sseq, cseq + 1),
+            c("PA", cseq + 1, sseq + 1, request),
+            s("PA", sseq + 1, cseq + 1 + len(request), response),
+            s("FA", sseq + 1 + len(response), cseq + 1 + len(request)),
+            c("A", cseq + 1 + len(request), sseq + 2 + len(response)),
+        ]
+
+    def _udp_exchange(self, dev, port, request, response):
+        peer = self._pick_peer(dev, port)
+        if not peer:
+            return None
+        remote = peer.site is not dev.site
+        if remote and not self._wan_ok():
+            return None
+        if not remote and not self._sub_ok():
+            return None
+        c_dst = (peer.site.gw_mac if remote else peer.mac) or BCAST_MAC
+        s_dst = (dev.site.gw_mac if remote else dev.mac) or BCAST_MAC
+        sport = random.randint(20000, 60000)
+        req = (Ether(src=dev.mac, dst=c_dst) / IP(src=dev.ip, dst=peer.ip) /
+               UDP(sport=sport, dport=port) / Raw(request))
+        resp = (Ether(src=peer.mac, dst=s_dst) / IP(src=peer.ip, dst=dev.ip) /
+                UDP(sport=port, dport=sport) / Raw(response))
+        return [WireFrame(req, dev.site.interface),
+                WireFrame(resp, peer.site.interface)]
 
     def modbus(self, dev):
-        return self._syn_to_peer(dev, 502)
+        tid = random.randint(0, 0xFFFF)
+        req = struct.pack(">HHHBBHH", tid, 0, 6, 1, 3, 0, 4)
+        resp = struct.pack(">HHHBBBHHHH", tid, 0, 11, 1, 3, 8, 720, 510, 68, 1013)
+        return self._tcp_exchange(dev, 502, req, resp)
 
     def s7(self, dev):
-        return self._syn_to_peer(dev, 102)
+        req = bytes.fromhex("0300001611e00000000100c1020100c2020102c0010a")
+        resp = bytes.fromhex("0300001611d00001000000c0010ac1020100c2020102")
+        return self._tcp_exchange(dev, 102, req, resp)
 
     def opcua(self, dev):        # OPC UA binary (modern industrial)
-        return self._syn_to_peer(dev, 4840)
+        endpoint = b"opc.tcp://iotad-lab:4840"
+        req = b"HEL\x00" + struct.pack("<IIIII", 32 + len(endpoint), 0, 65535, 65535, 0) + \
+              struct.pack("<I", len(endpoint)) + endpoint
+        resp = b"ACK\x00" + struct.pack("<IIIIII", 28, 0, 65535, 65535, 0, 0)
+        return self._tcp_exchange(dev, 4840, req, resp)
 
     def dnp3(self, dev):         # SCADA / utility RTUs and relays
-        return self._syn_to_peer(dev, 20000)
+        return self._tcp_exchange(dev, 20000,
+                                  bytes.fromhex("056405c901000004"),
+                                  bytes.fromhex("0564050004000001"))
 
     def fox(self, dev):          # Niagara Fox / Tridium building controllers
-        return self._syn_to_peer(dev, 1911)
+        return self._tcp_exchange(dev, 1911, b"fox a 1 -1 fox hello\n",
+                                  b"fox a 1 0 fox hello iotad-jace\n")
 
     def iec104(self, dev):       # IEC 60870-5-104 SCADA
-        return self._syn_to_peer(dev, 2404)
+        return self._tcp_exchange(dev, 2404, bytes.fromhex("680407000000"),
+                                  bytes.fromhex("68040b000000"))
 
     def melsec(self, dev):       # Mitsubishi MELSEC / SLMP
-        return self._syn_to_peer(dev, 5007)
+        req = bytes.fromhex("500000ffff03000c00100001040000d0000000a80100")
+        resp = bytes.fromhex("d00000ffff0300040000000000")
+        return self._tcp_exchange(dev, 5007, req, resp)
 
     def fins(self, dev):
         # Omron FINS/UDP node-address broadcast (controller data read, cmd 0501)
@@ -572,6 +835,93 @@ class Emitters:
                 IP(src=dev.ip, dst=self._broadcast_ip(dev)) /
                 UDP(sport=9600, dport=9600) / Raw(payload))
 
+    def hartip(self, dev):
+        return self._tcp_exchange(dev, 5094, b"HART-IP\x01\x00\x00\x00",
+                                  b"HART-IP\x01\x00\x00\x01")
+
+    def cip_safety(self, dev):
+        req = struct.pack("<HHII8sI", 0x0065, 4, 0, 0, b"iotadCIP", 0) + b"\x01\x00\x00\x00"
+        resp = struct.pack("<HHII8sI", 0x0065, 4, 1, 0, b"iotadCIP", 0) + b"\x01\x00\x00\x00"
+        return self._tcp_exchange(dev, 44818, req, resp)
+
+    def dicom(self, dev):
+        called, calling = b"IOTAD_SCP".ljust(16), b"IOTAD_SCU".ljust(16)
+        body = b"\x00\x01\x00\x00" + called + calling + b"\x00" * 32
+        req = b"\x01\x00" + struct.pack(">I", len(body)) + body
+        resp = b"\x02\x00" + struct.pack(">I", len(body)) + body
+        return self._tcp_exchange(dev, 11112, req, resp)
+
+    def hl7(self, dev):
+        msg = (b"\x0bMSH|^~\\&|IOTAD|LAB|EMR|CATO|20260821060000||ORU^R01|1|P|2.5\r"
+               b"OBX|1|NM|TEMP||21.4|C|18-25|N\r\x1c\r")
+        ack = (b"\x0bMSH|^~\\&|EMR|CATO|IOTAD|LAB|20260821060001||ACK|1|P|2.5\r"
+               b"MSA|AA|1\r\x1c\r")
+        return self._tcp_exchange(dev, 2575, msg, ack)
+
+    @staticmethod
+    def _mqtt_string(value):
+        value = value.encode() if isinstance(value, str) else value
+        return struct.pack(">H", len(value)) + value
+
+    def mqtt(self, dev):
+        client_id = self._mqtt_string(dev.hostname)
+        variable = self._mqtt_string("MQTT") + b"\x04\x02\x00\x3c"
+        connect_body = variable + client_id
+        connect = b"\x10" + bytes([len(connect_body)]) + connect_body
+        topic = "spBv1.0/iotad/DDATA/%s" % dev.hostname
+        payload = self._mqtt_string(topic) + b"metrics=temperature:21.4,status:online"
+        publish = b"\x30" + bytes([len(payload)]) + payload
+        return self._tcp_exchange(dev, 1883, connect + publish, b"\x20\x02\x00\x00")
+
+    def coap(self, dev):
+        token = dev.mac_bytes[-2:]
+        request = b"\x42\x01" + struct.pack(">H", random.randint(1, 65535)) + token + \
+                  b"\xb7sensors\x0btemperature"
+        response = b"\x62\x45" + request[2:6] + b"\xc1\x00\xff21.4 C"
+        return self._udp_exchange(dev, 5683, request, response)
+
+    def knx(self, dev):
+        request = bytes.fromhex("06100201000e0801") + b"\x00" * 6
+        response = bytes.fromhex("0610020200360801") + b"\x00" * 40
+        return self._udp_exchange(dev, 3671, request, response)
+
+    def iec61850(self, dev):
+        # TPKT/COTP Data TPDU followed by compact MMS initiate request/response.
+        request = bytes.fromhex("0300001602f080a80f80020780810100820100830100")
+        response = bytes.fromhex("0300001602f080a90f80020780810100820100830100")
+        return self._tcp_exchange(dev, 102, request, response)
+
+    def mtconnect(self, dev):
+        request = (b"GET /current HTTP/1.1\r\nHost: mtconnect.local:7878\r\n"
+                   b"Accept: application/xml\r\nConnection: close\r\n\r\n")
+        body = (b"<?xml version=\"1.0\"?><MTConnectStreams><DeviceStream name=\"cell\">"
+                b"<Events><Execution dataItemId=\"exec\">ACTIVE</Execution>"
+                b"</Events></DeviceStream></MTConnectStreams>")
+        response = (b"HTTP/1.1 200 OK\r\nContent-Type: application/xml\r\nContent-Length: " +
+                    str(len(body)).encode() + b"\r\nConnection: close\r\n\r\n" + body)
+        return self._tcp_exchange(dev, 7878, request, response)
+
+    def scenario_event(self, dev):
+        """Emit a controlled operational event; the global limiter remains final."""
+        event = ("shift_change", "maintenance", "alarm", "environmental_excursion",
+                 "firmware_update", "device_failure")[self._event_seq % 6]
+        self._event_seq += 1
+        if event == "shift_change":
+            return self.dhcp(dev)
+        if event in ("maintenance", "firmware_update"):
+            path = b"/maintenance/diagnostics" if event == "maintenance" else b"/firmware/check"
+            request = b"GET " + path + b" HTTP/1.1\r\nHost: device.local\r\n\r\n"
+            response = (b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                        b"Content-Length: 15\r\n\r\n{\"status\":\"ok\"}")
+            return self._tcp_exchange(dev, 80, request, response)
+        severity = {"alarm": 3, "environmental_excursion": 4, "device_failure": 2}[event]
+        message = (f"<1{severity}4>1 {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} "
+                   f"{dev.hostname} iotad - - [event@32473 type=\"{event}\" "
+                   f"category=\"{dev.profile['category']}\"] simulated lab event").encode()
+        return (Ether(src=dev.mac, dst=dev.site.gw_mac or BCAST_MAC) /
+                IP(src=dev.ip, dst=dev.site.gateway) /
+                UDP(sport=514, dport=514) / Raw(message))
+
     # -- outbound check-ins (routed via the device's own Socket) --
     def dns_checkin(self, dev):
         if not self._sub_ok():
@@ -580,11 +930,19 @@ class Emitters:
         if not hosts:
             return None
         q = random.choice(hosts)
-        resolver = dev.site.gateway            # the local Socket forwards DNS
-        return (Ether(src=dev.mac, dst=dev.site.gw_mac or BCAST_MAC) /
+        resolver = dev.site.dns_server or self.cfg.dns_server
+        return (Ether(src=dev.mac, dst=self._dst_mac_for(dev, resolver) or BCAST_MAC) /
                 IP(src=dev.ip, dst=resolver) /
                 UDP(sport=random.randint(1024, 65535), dport=53) /
                 DNS(rd=1, qd=DNSQR(qname=q, qtype="A")))
+
+    def ntp(self, dev):
+        if not self._wan_ok() or not self.ntp_ip:
+            return None
+        return (Ether(src=dev.mac, dst=self._dst_mac_for(dev, self.ntp_ip) or BCAST_MAC) /
+                IP(src=dev.ip, dst=self.ntp_ip) /
+                UDP(sport=random.randint(1024, 65535), dport=123) /
+                NTP(version=4, mode=3))
 
     def tls_checkin(self, dev):
         if not self._wan_ok():
@@ -593,14 +951,30 @@ class Emitters:
         if not hosts:
             return None
         host = random.choice(hosts)
-        try:
-            dst = socket.gethostbyname(host)
-        except Exception:
-            return None
-        return (Ether(src=dev.mac, dst=dev.site.gw_mac or BCAST_MAC) /
-                IP(src=dev.ip, dst=dst) /
-                TCP(sport=random.randint(1024, 65535), dport=443,
-                    flags="S", seq=random.randint(0, 0xFFFFFFFF)))
+        dst = self.host_ips[host]
+        sport = random.randint(1024, 65535)
+        seq = random.randint(0, 0x7FFFFFFF)
+        ether = Ether(src=dev.mac, dst=dev.site.gw_mac or BCAST_MAC)
+        syn = ether / IP(src=dev.ip, dst=dst) / TCP(sport=sport, dport=443, flags="S", seq=seq)
+        hello = self._tls_client_hello(host)
+        data = (ether / IP(src=dev.ip, dst=dst) /
+                TCP(sport=sport, dport=443, flags="PA", seq=seq + 1, ack=1) / Raw(hello))
+        return [syn, data]
+
+    @staticmethod
+    def _tls_client_hello(host):
+        """Small valid TLS 1.2-compatible ClientHello carrying SNI and TLS 1.3."""
+        name = host.encode("idna")[:253]
+        sni = b"\x00\x00" + struct.pack(">H", len(name) + 5) + \
+              struct.pack(">H", len(name) + 3) + b"\x00" + struct.pack(">H", len(name)) + name
+        versions = b"\x00\x2b\x00\x05\x04\x03\x04\x03\x03"
+        groups = b"\x00\x0a\x00\x06\x00\x04\x00\x1d\x00\x17"
+        exts = sni + versions + groups
+        body = (b"\x03\x03" + os.urandom(32) + b"\x00" +
+                b"\x00\x06\x13\x01\x13\x02\xc0\x2f" + b"\x01\x00" +
+                struct.pack(">H", len(exts)) + exts)
+        hs = b"\x01" + len(body).to_bytes(3, "big") + body
+        return b"\x16\x03\x01" + struct.pack(">H", len(hs)) + hs
 
 
 # ---- minimal BER / SNMP ----------------------------------------------------
@@ -635,7 +1009,8 @@ def _enc_int(n):
 
 def _enc_uint(n):
     """Minimal-length unsigned encoding for the SNMP application types
-    Counter32/Gauge32/TimeTicks (no sign-bit padding -- they are unsigned)."""
+    Counter32/Gauge32/TimeTicks. BER still requires a leading zero when the
+    high bit is set so the constrained INTEGER value is not decoded negative."""
     n &= 0xFFFFFFFF
     if n == 0:
         return b"\x00"
@@ -643,6 +1018,8 @@ def _enc_uint(n):
     while n:
         b.insert(0, n & 0xFF)
         n >>= 8
+    if b[0] & 0x80:
+        b.insert(0, 0)
     return bytes(b)
 
 
@@ -820,16 +1197,19 @@ class Responder:
     """
     MAX_CONNS = 4096
 
-    def __init__(self, cfg, roster, iface=None):
+    def __init__(self, cfg, roster, tx, iface=None, known_macs=None):
         self.cfg = cfg
+        self.tx = tx
         self.iface = iface or cfg.interface
         self.by_ip = {d.ip: d for d in roster}
-        self.our_macs = {d.mac for d in roster}
+        self.our_macs = set(known_macs or (d.mac for d in roster))
         self.snmp = {d.ip: SnmpAgent(d) for d in roster if d.profile.get("snmp")}
         # EtherNet/IP List Identity + WS-Discovery answerers (application-layer
         # identity, so a discovery engine learns vendor/model, not just "port open")
         self.enip = {d.ip: d for d in roster if d.profile.get("cip")}
         self.ws = {d.ip: d for d in roster if d.profile.get("ws_discovery")}
+        self.bacnet = {d.ip: d for d in roster if d.profile.get("bacnet")}
+        self.profinet = {d.mac: d for d in roster if d.profile.get("profinet")}
         # mDNS query index: service-type -> devices, and <host>.local -> device
         self.mdns_svc, self.mdns_host = {}, {}
         for d in roster:
@@ -838,22 +1218,22 @@ class Responder:
                 self.mdns_host[f"{d.hostname}.local".lower()] = d
         self.conns = {}
         self.sniffer = None
-        self._sock = None
         self.arp_replies = self.icmp_replies = 0
         self.tcp_opens = self.tcp_banners = self.snmp_replies = 0
         self.enip_replies = self.ws_replies = self.mdns_replies = 0
         self.modbus_replies = 0
+        self.bacnet_replies = self.profinet_replies = 0
 
     def start(self):
         if self.cfg.dry_run:
             return
-        self._sock = conf.L2socket(iface=self.iface)
         # Kernel-side filter: ARP, ICMP, the UDP discovery/identity protocols
         # (SNMP 161, mDNS 5353, WS-Discovery 3702, EtherNet/IP List Identity
         # 44818), and TCP control/data segments (SYN/FIN/RST/PSH -- skip the
         # bare-ACK stream we never generate).
         filt = ("arp or icmp or "
-                "(udp port 161 or udp port 5353 or udp port 3702 or udp port 44818) or "
+                "(udp port 161 or udp port 5353 or udp port 3702 or udp port 44818 or "
+                "udp port 47808) or ether proto 0x8892 or "
                 "(tcp and tcp[13] & 0x0f != 0)")
         self.sniffer = AsyncSniffer(iface=self.iface, store=False,
                                     filter=filt, prn=self._handle)
@@ -862,7 +1242,7 @@ class Responder:
                  "for %d device IPs", self.iface, len(self.by_ip))
 
     def _tx(self, dev, l3, dst_mac):
-        self._sock.send(Ether(src=dev.mac, dst=dst_mac) / l3)
+        self.tx.send("response", Ether(src=dev.mac, dst=dst_mac) / l3, self.iface)
 
     def _handle(self, pkt):
         try:
@@ -874,6 +1254,8 @@ class Responder:
                 self._icmp(pkt)
             elif pkt.haslayer(TCP):
                 self._tcp(pkt)
+            elif pkt[Ether].type == 0x8892:
+                self._profinet(pkt)
             elif pkt.haslayer(UDP) and pkt.haslayer(IP):
                 dport = pkt[UDP].dport
                 if dport == 161:
@@ -884,6 +1266,8 @@ class Responder:
                     self._wsdisc(pkt)
                 elif dport == 44818:
                     self._enip(pkt)
+                elif dport == 47808:
+                    self._bacnet(pkt)
         except Exception as e:  # never let a malformed frame kill the thread
             log.debug("responder: %s", e)
 
@@ -934,10 +1318,14 @@ class Responder:
                          TCP(sport=port, dport=t.sport, flags="RA",
                              seq=0, ack=t.seq + 1), smac)
             return
-        key = (ip.src, t.sport, port)
+        key = (ip.src, t.sport, ip.dst, port)
         if flags & SYN and not flags & ACK:        # open port -> SYN-ACK
+            cutoff = time.monotonic() - 30.0
+            for old_key, old in list(self.conns.items()):
+                if old[3] < cutoff:
+                    self.conns.pop(old_key, None)
             isn = random.randint(0, 0xFFFFFFFF)
-            self.conns[key] = (isn, dev, port)
+            self.conns[key] = (isn, dev, port, time.monotonic())
             if len(self.conns) > self.MAX_CONNS:
                 self.conns.pop(next(iter(self.conns)))
             self._tx(dev, IP(src=dev.ip, dst=ip.src) /
@@ -1098,9 +1486,9 @@ class Responder:
             item = self._enip_identity(dev)
             body = (struct.pack("<HH", 0x0063, len(item)) + b"\x00" * 8 +
                     sctx + b"\x00" * 4 + item)
-            self._sock.send(Ether(src=dev.mac, dst=pkt[Ether].src) /
-                            IP(src=dev.ip, dst=pkt[IP].src) /
-                            UDP(sport=44818, dport=pkt[UDP].sport) / Raw(body))
+            self._tx(dev, IP(src=dev.ip, dst=pkt[IP].src) /
+                     UDP(sport=44818, dport=pkt[UDP].sport) / Raw(body),
+                     pkt[Ether].src)
             self.enip_replies += 1
 
     @staticmethod
@@ -1128,12 +1516,47 @@ class Responder:
             return
         m = re.search(rb"MessageID>\s*([^<\s]+)", data)
         relates = m.group(1).decode("ascii", "ignore") if m else "urn:uuid:0"
-        for dev in self.ws.values():
+        target = self.ws.get(pkt[IP].dst)
+        for dev in ([target] if target else self.ws.values()):
             body = self._wsdisc_match(dev, relates)
-            self._sock.send(Ether(src=dev.mac, dst=pkt[Ether].src) /
-                            IP(src=dev.ip, dst=pkt[IP].src) /
-                            UDP(sport=3702, dport=pkt[UDP].sport) / Raw(body))
+            self._tx(dev, IP(src=dev.ip, dst=pkt[IP].src) /
+                     UDP(sport=3702, dport=pkt[UDP].sport) / Raw(body),
+                     pkt[Ether].src)
             self.ws_replies += 1
+
+    def _bacnet(self, pkt):
+        """Answer BACnet/IP Who-Is with one I-Am per matching controller."""
+        data = bytes(pkt[UDP].payload)
+        if len(data) < 4 or data[0] != 0x81 or b"\x10\x08" not in data:
+            return
+        target = self.bacnet.get(pkt[IP].dst)
+        for dev in ([target] if target else self.bacnet.values()):
+            b = dev.profile["bacnet"]
+            objid = (8 << 22) | (b["device_id"] & 0x3FFFFF)
+            apdu = (b"\x10\x00\xc4" + struct.pack(">I", objid) +
+                    b"\x22\x05\xc4\x91\x03\x22" + struct.pack(">H", b["vendor_id"]))
+            npdu = b"\x01\x00" + apdu
+            body = b"\x81\x0a" + struct.pack(">H", len(npdu) + 4) + npdu
+            self._tx(dev, IP(src=dev.ip, dst=pkt[IP].src) /
+                     UDP(sport=47808, dport=pkt[UDP].sport) / Raw(body),
+                     pkt[Ether].src)
+            self.bacnet_replies += 1
+
+    def _profinet(self, pkt):
+        """Answer DCP Identify-All with station-name identity blocks."""
+        data = bytes(pkt[Ether].payload)
+        if len(data) < 12 or data[:2] != b"\xfe\xfe" or data[2] != 0x05:
+            return
+        xid = data[4:8]
+        for dev in self.profinet.values():
+            name = dev.hostname.encode()[:240]
+            block = b"\x02\x02" + struct.pack(">H", len(name) + 2) + b"\x00\x00" + name
+            if len(block) & 1:
+                block += b"\x00"
+            body = b"\xfe\xff\x05\x01" + xid + b"\x00\x00" + struct.pack(">H", len(block)) + block
+            self.tx.send("response", Ether(src=dev.mac, dst=pkt[Ether].src, type=0x8892) /
+                         Raw(body), self.iface)
+            self.profinet_replies += 1
 
     @staticmethod
     def _wsdisc_match(dev, relates):
@@ -1204,10 +1627,10 @@ class Responder:
                       ttl=120, rdata=dev.ip)]
 
     def _send_mdns(self, dev, an):
-        dns = DNS(qr=1, aa=1, qd=None, an=an)
-        self._sock.send(Ether(src=dev.mac, dst=MDNS_MCAST_MAC) /
-                        IP(src=dev.ip, dst="224.0.0.251", ttl=255) /
-                        UDP(sport=5353, dport=5353) / dns)
+        dns = DNS(qr=1, aa=1, qd=[], an=an)
+        self.tx.send("response", Ether(src=dev.mac, dst=MDNS_MCAST_MAC) /
+                     IP(src=dev.ip, dst="224.0.0.251", ttl=255) /
+                     UDP(sport=5353, dport=5353) / dns, self.iface)
         self.mdns_replies += 1
 
     def stop(self):
@@ -1216,14 +1639,96 @@ class Responder:
                 self.sniffer.stop()
             except Exception:
                 pass
-        if self._sock:
-            self._sock.close()
         log.info("responder[%s] answered %d ARP, %d ICMP, %d TCP(open), "
                  "%d HTTP, %d SNMP, %d Modbus-ID, %d EtherNet/IP, %d WS-Disc, "
-                 "%d mDNS", self.iface, self.arp_replies, self.icmp_replies,
+                  "%d mDNS, %d BACnet, %d PROFINET", self.iface,
+                  self.arp_replies, self.icmp_replies,
                  self.tcp_opens, self.tcp_banners, self.snmp_replies,
                  self.modbus_replies, self.enip_replies, self.ws_replies,
-                 self.mdns_replies)
+                  self.mdns_replies, self.bacnet_replies, self.profinet_replies)
+
+    def snapshot(self):
+        return {
+            "interface": self.iface,
+            "devices": len(self.by_ip),
+            "arp": self.arp_replies,
+            "icmp": self.icmp_replies,
+            "tcp_open": self.tcp_opens,
+            "http": self.tcp_banners,
+            "snmp": self.snmp_replies,
+            "modbus": self.modbus_replies,
+            "ethernet_ip": self.enip_replies,
+            "ws_discovery": self.ws_replies,
+            "mdns": self.mdns_replies,
+            "bacnet": self.bacnet_replies,
+            "profinet": self.profinet_replies,
+            "tcp_state_entries": len(self.conns),
+        }
+
+
+class MetricsReporter:
+    """Periodically writes an atomic JSON health/traffic snapshot."""
+
+    def __init__(self, cfg, roster, tx, responders):
+        self.cfg, self.roster, self.tx, self.responders = cfg, roster, tx, responders
+        self.started = time.time()
+        self._stop = threading.Event()
+        self._thread = None
+
+    def snapshot(self):
+        by_category, by_site = {}, {}
+        for dev in self.roster:
+            by_category[dev.profile["category"]] = by_category.get(dev.profile["category"], 0) + 1
+            by_site[dev.site.name] = by_site.get(dev.site.name, 0) + 1
+        return {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "uptime_seconds": int(time.time() - self.started),
+            "facility": self.cfg.facility,
+            "scenario": self.cfg.scenario,
+            "devices": len(self.roster),
+            "devices_by_category": by_category,
+            "devices_by_site": by_site,
+            "sites": [{"name": s.name, "interface": s.interface,
+                       "zone": s.zone, "vlan": s.vlan, "subnet": str(s.subnet)}
+                      for s in self.cfg.sites],
+            "transmitter": self.tx.snapshot(),
+            "responders": [r.snapshot() for r in self.responders],
+        }
+
+    def _write(self):
+        if not self.cfg.metrics_file:
+            return
+        directory = os.path.dirname(self.cfg.metrics_file) or "."
+        os.makedirs(directory, exist_ok=True)
+        tmp = self.cfg.metrics_file + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(self.snapshot(), f, indent=2, sort_keys=True)
+            f.write("\n")
+        os.replace(tmp, self.cfg.metrics_file)
+
+    def _run(self):
+        while not self._stop.wait(self.cfg.metrics_interval):
+            try:
+                self._write()
+            except OSError as e:
+                log.warning("metrics: %s", e)
+
+    def start(self):
+        if not self.cfg.dry_run and self.cfg.metrics_file:
+            self._write()
+            self._thread = threading.Thread(target=self._run, daemon=True,
+                                            name="iotad-metrics")
+            self._thread.start()
+
+    def stop(self):
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=2)
+        if not self.cfg.dry_run and self.cfg.metrics_file:
+            try:
+                self._write()
+            except OSError as e:
+                log.warning("metrics: %s", e)
 
 
 # ---- scheduler -------------------------------------------------------------
@@ -1254,7 +1759,8 @@ class Scheduler:
             base = random.randint(lo, hi)
         else:
             base = self.cfg.timing.getint(key, fallback=default)
-        return base * random.uniform(0.75, 1.25) * self._diurnal()  # jitter + diurnal
+        return (base * random.uniform(0.75, 1.25) * self._diurnal() *
+                SCENARIO_CADENCE[self.cfg.scenario])
 
     def _schedule(self, when, dev, beacon):
         heappush(self.heap, (when, self.seq, dev, beacon))
@@ -1269,6 +1775,10 @@ class Scheduler:
                     continue
                 offset = random.uniform(0, 5 if not spread else min(30, self._interval(beacon)))
                 self._schedule(now + offset, dev, beacon)
+        if self.cfg.events_enabled:
+            stride = max(1, len(self.roster) // 20)
+            for dev in self.roster[::stride]:
+                self._schedule(now + random.uniform(5, 30), dev, "scenario_event")
 
     def emit(self, dev, beacon):
         fn = getattr(self.em, beacon, None)
@@ -1282,7 +1792,10 @@ class Scheduler:
         if pkt is None:
             return
         for p in (pkt if isinstance(pkt, list) else [pkt]):
-            self.tx.send(beacon, p, dev.site.interface)
+            if isinstance(p, WireFrame):
+                self.tx.send(beacon, p.pkt, p.iface)
+            else:
+                self.tx.send(beacon, p, dev.site.interface)
 
     def run_once(self):
         """Emit exactly one of every applicable beacon per device (testing)."""
@@ -1291,6 +1804,10 @@ class Scheduler:
                 if beacon in WAN_BEACONS and not self.em._wan_ok():
                     continue
                 self.emit(dev, beacon)
+        if self.cfg.events_enabled:
+            stride = max(1, len(self.roster) // 20)
+            for dev in self.roster[::stride]:
+                self.emit(dev, "scenario_event")
 
     def run(self):
         now = time.monotonic()
@@ -1363,6 +1880,8 @@ def main():
     ap.add_argument("--once", action="store_true", help="emit one pass then exit")
     ap.add_argument("--dry-run", action="store_true", help="never transmit; log frames")
     ap.add_argument("--duration", type=int, default=0, help="run N seconds then exit")
+    ap.add_argument("--pcap", metavar="FILE",
+                    help="write crafted frames to a PCAP instead of transmitting")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
 
@@ -1371,9 +1890,17 @@ def main():
         if os.path.exists(local):
             args.config = local
 
-    cfg = Config(args.config)
+    try:
+        cfg = Config(args.config)
+    except (ValueError, configparser.Error, ipaddress.AddressValueError) as e:
+        sys.exit(f"iotad: invalid config: {e}")
     if args.dry_run:
         cfg.dry_run = True
+    if args.pcap:
+        cfg.dry_run = True
+        cfg.pcap_path = args.pcap
+    else:
+        cfg.pcap_path = None
     setup_logging(cfg, args.verbose)
 
     catalog = load_catalog()
@@ -1387,8 +1914,9 @@ def main():
         sys.exit("iotad: raw-socket transmit needs root (or --dry-run)")
 
     sites_desc = ", ".join(f"{s.name}={s.interface}:{s.subnet}" for s in cfg.sites)
-    log.info("config=%s sites=[%s] devices=%d dry_run=%s scope=%s",
-             args.config, sites_desc, len(roster), cfg.dry_run, cfg.outbound_scope)
+    log.info("config=%s sites=[%s] devices=%d facility=%s scenario=%s dry_run=%s scope=%s",
+             args.config, sites_desc, len(roster), cfg.facility, cfg.scenario,
+             cfg.dry_run, cfg.outbound_scope)
 
     tx = Tx(cfg)
     emitters = Emitters(cfg, tx, roster)
@@ -1397,7 +1925,8 @@ def main():
     responders = []
     for iface in {s.interface for s in cfg.sites}:
         subset = [d for d in roster if d.site.interface == iface]
-        responders.append(Responder(cfg, subset, iface=iface))
+        responders.append(Responder(cfg, subset, tx, iface=iface,
+                                    known_macs=(d.mac for d in roster)))
 
     if args.once:
         sched.run_once()
@@ -1423,9 +1952,12 @@ def main():
 
     for r in responders:
         r.start()
+    metrics = MetricsReporter(cfg, roster, tx, responders)
+    metrics.start()
     try:
         sched.run()
     finally:
+        metrics.stop()
         for r in responders:
             r.stop()
         tx.close()

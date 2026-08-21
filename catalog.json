@@ -14,7 +14,8 @@
         "mdns",
         "ssdp",
         "dns_checkin",
-        "tls_checkin"
+        "tls_checkin",
+        "ntp"
       ],
       "dhcp_class": "AXIS,Network Camera",
       "mdns": [
@@ -27,6 +28,7 @@
         "fw.axis.com",
         "dispatch.axis.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -67,7 +69,8 @@
         "mdns",
         "ssdp",
         "dns_checkin",
-        "tls_checkin"
+        "tls_checkin",
+        "ntp"
       ],
       "dhcp_class": "Hikvision",
       "mdns": [
@@ -79,6 +82,7 @@
         "litedev.hik-connect.com",
         "www.hikvisioneurope.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -122,7 +126,8 @@
         "dhcp",
         "mdns",
         "ssdp",
-        "dns_checkin"
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "dahua",
       "mdns": [
@@ -135,6 +140,7 @@
         "www.easy4ip.com",
         "p2p.dahuasecurity.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -178,7 +184,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "ssdp"
+        "ssdp",
+        "ntp"
       ],
       "dhcp_class": "SAMSUNG-NETWORK-CAMERA",
       "mdns": [
@@ -187,6 +194,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -225,7 +233,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "ssdp"
+        "ssdp",
+        "ntp"
       ],
       "dhcp_class": "Bosch",
       "mdns": [
@@ -234,6 +243,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -270,7 +280,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "dns_checkin"
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "HID",
       "mdns": [
@@ -280,6 +291,7 @@
       "checkin": [
         "mercury.hidglobal.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -310,7 +322,8 @@
         "garp",
         "dhcp",
         "bacnet_whois",
-        "dns_checkin"
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "JCI-Metasys",
       "mdns": [],
@@ -318,6 +331,7 @@
       "checkin": [
         "updates.johnsoncontrols.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -333,6 +347,10 @@
         "vendor": "Johnson Controls",
         "product": "Johnson Controls Metasys",
         "revision": "5.28"
+      },
+      "bacnet": {
+        "vendor_id": 5,
+        "device_id": 39765
       },
       "vendors_matched": 1,
       "ouis": [
@@ -350,12 +368,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "bacnet_whois"
+        "bacnet_whois",
+        "ntp"
       ],
       "dhcp_class": "Honeywell",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -371,6 +391,10 @@
         "vendor": "Honeywell",
         "product": "Honeywell controller",
         "revision": "4.3"
+      },
+      "bacnet": {
+        "vendor_id": 17,
+        "device_id": 810017
       },
       "vendors_matched": 22,
       "ouis": [
@@ -395,12 +419,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "bacnet_whois"
+        "bacnet_whois",
+        "ntp"
       ],
       "dhcp_class": "Emerson",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -409,6 +435,10 @@
         "vendor": "Emerson",
         "product": "Emerson environmental controller",
         "revision": "2.1"
+      },
+      "bacnet": {
+        "vendor_id": 0,
+        "device_id": 1097347
       },
       "vendors_matched": 7,
       "ouis": [
@@ -435,12 +465,14 @@
         "dhcp",
         "lldp",
         "s7",
-        "profinet_dcp"
+        "profinet_dcp",
+        "ntp"
       ],
       "dhcp_class": "Siemens",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         102
@@ -456,6 +488,11 @@
         "vendor": "Siemens",
         "product": "Siemens S7 PLC",
         "revision": "4.13"
+      },
+      "profinet": {
+        "vendor_id": 42,
+        "device_id": 35429,
+        "role": 1
       },
       "vendors_matched": 38,
       "ouis": [
@@ -482,12 +519,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "enip"
+        "enip",
+        "ntp"
       ],
       "dhcp_class": "Allen-Bradley",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         44818
@@ -535,12 +574,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "modbus"
+        "modbus",
+        "ntp"
       ],
       "dhcp_class": "Schneider-Electric",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -586,12 +627,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "modbus"
+        "modbus",
+        "ntp"
       ],
       "dhcp_class": "Beckhoff",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -629,12 +672,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "modbus"
+        "modbus",
+        "ntp"
       ],
       "dhcp_class": "WAGO",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -673,12 +718,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "modbus"
+        "modbus",
+        "ntp"
       ],
       "dhcp_class": "PhoenixContact",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -718,12 +765,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "lldp"
+        "lldp",
+        "ntp"
       ],
       "dhcp_class": "Moxa",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -758,12 +807,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "modbus"
+        "modbus",
+        "ntp"
       ],
       "dhcp_class": "Advantech",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -809,12 +860,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "lldp"
+        "lldp",
+        "ntp"
       ],
       "dhcp_class": "Hirschmann",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -856,7 +909,8 @@
         "dhcp",
         "lldp",
         "ubnt_discover",
-        "dns_checkin"
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "ubnt",
       "mdns": [],
@@ -864,6 +918,7 @@
       "checkin": [
         "fw-update.ubnt.com"
       ],
+      "udp_ports": [],
       "ports": [
         22,
         80,
@@ -906,12 +961,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "cdp"
+        "cdp",
+        "ntp"
       ],
       "dhcp_class": "Cisco",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         22,
         80,
@@ -953,7 +1010,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "Zebra",
       "mdns": [
@@ -963,6 +1021,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1007,7 +1066,8 @@
         "dhcp",
         "mdns",
         "snmp",
-        "dns_checkin"
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "Hewlett-Packard JetDirect",
       "mdns": [
@@ -1025,6 +1085,7 @@
         "chat.hpeprint.com",
         "h20180.www2.hp.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1066,7 +1127,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "Canon",
       "mdns": [
@@ -1078,6 +1140,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1120,7 +1183,8 @@
         "dhcp",
         "mdns",
         "snmp",
-        "dns_checkin"
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "EPSON",
       "mdns": [
@@ -1137,6 +1201,7 @@
         "epsonconnect.com",
         "pool.epsonconnect.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1178,7 +1243,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "Brother",
       "mdns": [
@@ -1191,6 +1257,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1232,7 +1299,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "XEROX",
       "mdns": [
@@ -1243,6 +1311,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1284,7 +1353,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "Lexmark",
       "mdns": [
@@ -1295,6 +1365,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1333,7 +1404,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "RICOH",
       "mdns": [
@@ -1345,6 +1417,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1383,7 +1456,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "KONICA MINOLTA",
       "mdns": [
@@ -1395,6 +1469,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1431,7 +1506,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "ssdp"
+        "ssdp",
+        "ntp"
       ],
       "dhcp_class": "Crestron",
       "mdns": [
@@ -1440,6 +1516,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1469,12 +1546,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "APC",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1507,12 +1586,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "Liebert",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1544,7 +1625,8 @@
       "beacons": [
         "garp",
         "dhcp",
-        "mdns"
+        "mdns",
+        "ntp"
       ],
       "dhcp_class": "Lutron",
       "mdns": [
@@ -1553,6 +1635,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1583,13 +1666,15 @@
         "garp",
         "dhcp",
         "lldp",
-        "cdp"
+        "cdp",
+        "ntp"
       ],
       "lldp_med": "voice",
       "dhcp_class": "Cisco Systems, Inc. IP Phone CP-8841",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1625,13 +1710,15 @@
       "beacons": [
         "garp",
         "dhcp",
-        "lldp"
+        "lldp",
+        "ntp"
       ],
       "lldp_med": "voice",
       "dhcp_class": "Polycom-VVX411",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1661,13 +1748,15 @@
       "beacons": [
         "garp",
         "dhcp",
-        "lldp"
+        "lldp",
+        "ntp"
       ],
       "lldp_med": "voice",
       "dhcp_class": "yealink",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1703,13 +1792,15 @@
       "beacons": [
         "garp",
         "dhcp",
-        "lldp"
+        "lldp",
+        "ntp"
       ],
       "lldp_med": "voice",
       "dhcp_class": "ccp.avaya.com",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1747,12 +1838,14 @@
         "dhcp",
         "lldp",
         "s7",
-        "profinet_dcp"
+        "profinet_dcp",
+        "ntp"
       ],
       "dhcp_class": "Siemens",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         102
@@ -1768,6 +1861,11 @@
         "vendor": "Siemens",
         "product": "Siemens SIMATIC HMI panel",
         "revision": "1.24"
+      },
+      "profinet": {
+        "vendor_id": 42,
+        "device_id": 34870,
+        "role": 1
       },
       "vendors_matched": 61,
       "ouis": [
@@ -1793,12 +1891,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "enip"
+        "enip",
+        "ntp"
       ],
       "dhcp_class": "Allen-Bradley",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         44818
@@ -1847,7 +1947,8 @@
         "dhcp",
         "mdns",
         "ssdp",
-        "dns_checkin"
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "Hikvision",
       "mdns": [
@@ -1858,6 +1959,7 @@
       "checkin": [
         "litedev.hik-connect.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -1899,7 +2001,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "ssdp"
+        "ssdp",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [
@@ -1908,6 +2011,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -1945,7 +2049,9 @@
         "garp",
         "dhcp",
         "snmp",
-        "mdns"
+        "mdns",
+        "coap",
+        "ntp"
       ],
       "dhcp_class": "APC",
       "mdns": [
@@ -1953,6 +2059,9 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [
+        5683
+      ],
       "ports": [
         80
       ],
@@ -1986,7 +2095,8 @@
         "garp",
         "dhcp",
         "snmp",
-        "mdns"
+        "mdns",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [
@@ -1994,6 +2104,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -2025,12 +2136,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "snmp"
+        "snmp",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -2064,7 +2177,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "ssdp"
+        "ssdp",
+        "ntp"
       ],
       "dhcp_class": "2N",
       "mdns": [
@@ -2073,6 +2187,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -2102,7 +2217,8 @@
         "garp",
         "dhcp",
         "mdns",
-        "ssdp"
+        "ssdp",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [
@@ -2110,6 +2226,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -2140,8 +2257,11 @@
         "garp",
         "dhcp",
         "mdns",
+        "mqtt",
+        "coap",
         "dns_checkin",
-        "tls_checkin"
+        "tls_checkin",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [
@@ -2152,10 +2272,14 @@
       "checkin": [
         "updates.multitech.net"
       ],
+      "udp_ports": [
+        5683
+      ],
       "ports": [
         22,
         80,
-        443
+        443,
+        1883
       ],
       "http_server": "lighttpd",
       "http_auth": "Basic",
@@ -2185,7 +2309,8 @@
         "dhcp",
         "lldp",
         "opcua",
-        "profinet_dcp"
+        "profinet_dcp",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [
@@ -2193,6 +2318,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         4840
@@ -2208,6 +2334,11 @@
         "vendor": "B&R Industrial Automation",
         "product": "B&R industrial controller",
         "revision": "2.37"
+      },
+      "profinet": {
+        "vendor_id": 0,
+        "device_id": 45149,
+        "role": 1
       },
       "vendors_matched": 3,
       "ouis": [
@@ -2227,12 +2358,14 @@
       "beacons": [
         "garp",
         "dhcp",
-        "dnp3"
+        "dnp3",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         20000
       ],
@@ -2263,13 +2396,17 @@
         "garp",
         "dhcp",
         "lldp",
-        "iec104"
+        "iec104",
+        "iec61850",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
+        102,
         2404
       ],
       "snmp": {
@@ -2306,7 +2443,9 @@
         "dhcp",
         "fox",
         "bacnet_whois",
-        "dns_checkin"
+        "mqtt",
+        "dns_checkin",
+        "ntp"
       ],
       "dhcp_class": "niagara",
       "mdns": [],
@@ -2314,9 +2453,11 @@
       "checkin": [
         "accounts.niagara-community.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
+        1883,
         1911
       ],
       "http_server": "GoAhead-Webs",
@@ -2330,6 +2471,10 @@
         "vendor": "Tridium",
         "product": "Tridium JACE controller",
         "revision": "2.31"
+      },
+      "bacnet": {
+        "vendor_id": 0,
+        "device_id": 3784267
       },
       "vendors_matched": 1,
       "ouis": [
@@ -2350,12 +2495,14 @@
         "dhcp",
         "lldp",
         "fins",
-        "modbus"
+        "modbus",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -2399,12 +2546,14 @@
         "garp",
         "dhcp",
         "lldp",
-        "melsec"
+        "melsec",
+        "ntp"
       ],
       "dhcp_class": "",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         5007
@@ -2431,6 +2580,660 @@
         "28:E9:8E",
         "00:26:92",
         "94:A4:B5"
+      ]
+    },
+    {
+      "id": "pms_particle",
+      "category": "cleanroom",
+      "label": "Particle Measuring Systems airborne particle counter",
+      "vendors": [
+        "PARTICLE MEASURING SYSTEMS"
+      ],
+      "host": "particle-ctr",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "modbus",
+        "bacnet_whois",
+        "snmp",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Environmental Monitor",
+      "snmp": {
+        "descr": "Particle Measuring Systems airborne particle counter, clean-room environmental control",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Particle",
+        "product": "Particle Measuring Systems airborne particle counter",
+        "revision": "5.6"
+      },
+      "modbus_id": {
+        "vendor": "Particle",
+        "product": "Particle Measuring Systems airborne particle counter",
+        "revision": "5.6"
+      },
+      "bacnet": {
+        "vendor_id": 0,
+        "device_id": 3458384
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:60:A6"
+      ]
+    },
+    {
+      "id": "siemens_ffu",
+      "category": "cleanroom",
+      "label": "Siemens fan-filter-unit controller",
+      "vendors": [
+        "Siemens"
+      ],
+      "host": "ffu-ctrl",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "profinet_dcp",
+        "modbus",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Environmental Monitor",
+      "snmp": {
+        "descr": "Siemens fan-filter-unit controller, clean-room environmental control",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Siemens",
+        "product": "Siemens fan-filter-unit controller",
+        "revision": "4.31"
+      },
+      "modbus_id": {
+        "vendor": "Siemens",
+        "product": "Siemens fan-filter-unit controller",
+        "revision": "4.31"
+      },
+      "profinet": {
+        "vendor_id": 0,
+        "device_id": 4997,
+        "role": 1
+      },
+      "vendors_matched": 61,
+      "ouis": [
+        "E0:DC:A0",
+        "90:DA:F9",
+        "38:4B:24",
+        "EC:1C:5D",
+        "50:00:84",
+        "00:11:06",
+        "00:90:40",
+        "00:A0:03"
+      ]
+    },
+    {
+      "id": "honeywell_gas",
+      "category": "environmental",
+      "label": "Honeywell gas detector",
+      "vendors": [
+        "Honeywell"
+      ],
+      "host": "gas-det",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "modbus",
+        "snmp",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Monitoring Appliance",
+      "snmp": {
+        "descr": "Honeywell gas detector, environmental monitoring appliance",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Honeywell",
+        "product": "Honeywell gas detector",
+        "revision": "3.26"
+      },
+      "modbus_id": {
+        "vendor": "Honeywell",
+        "product": "Honeywell gas detector",
+        "revision": "3.26"
+      },
+      "vendors_matched": 22,
+      "ouis": [
+        "00:20:3D",
+        "00:40:84",
+        "14:41:46",
+        "00:1F:55",
+        "00:90:30",
+        "00:80:A7",
+        "58:FC:C8",
+        "0C:23:69"
+      ]
+    },
+    {
+      "id": "eandh_instrument",
+      "category": "instrumentation",
+      "label": "Endress+Hauser process instrument",
+      "vendors": [
+        "Endress.*Hauser"
+      ],
+      "host": "process-xmtr",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "modbus",
+        "hartip",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        502,
+        5094
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Process Instrument",
+      "snmp": {
+        "descr": "Endress+Hauser process instrument, process instrumentation",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Endress+Hauser",
+        "product": "Endress+Hauser process instrument",
+        "revision": "4.15"
+      },
+      "modbus_id": {
+        "vendor": "Endress+Hauser",
+        "product": "Endress+Hauser process instrument",
+        "revision": "4.15"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:07:05"
+      ]
+    },
+    {
+      "id": "schneider_ro_skid",
+      "category": "water_treatment",
+      "label": "Schneider RO/DI filtration skid controller",
+      "vendors": [
+        "Schneider Electric"
+      ],
+      "host": "ro-skid",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "modbus",
+        "opcua",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_opcua-tcp._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        502,
+        4840
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Skid Controller",
+      "snmp": {
+        "descr": "Schneider RO/DI filtration skid controller, process skid controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Schneider",
+        "product": "Schneider RO/DI filtration skid controller",
+        "revision": "3.6"
+      },
+      "modbus_id": {
+        "vendor": "Schneider",
+        "product": "Schneider RO/DI filtration skid controller",
+        "revision": "3.6"
+      },
+      "vendors_matched": 15,
+      "ouis": [
+        "74:F6:61",
+        "20:44:3A",
+        "9C:0E:51",
+        "00:11:00",
+        "00:0C:81",
+        "00:00:54",
+        "00:03:74",
+        "00:13:24"
+      ]
+    },
+    {
+      "id": "danfoss_vfd",
+      "category": "drive",
+      "label": "Danfoss variable-frequency drive",
+      "vendors": [
+        "Danfoss"
+      ],
+      "host": "vfd",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "modbus",
+        "enip",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        502,
+        44818
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Drive Controller",
+      "snmp": {
+        "descr": "Danfoss variable-frequency drive, motor drive",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Danfoss",
+        "product": "Danfoss variable-frequency drive",
+        "revision": "5.6"
+      },
+      "cip": {
+        "vendor_id": 0,
+        "device_type": 0,
+        "product_code": 408,
+        "rev_major": 5,
+        "rev_minor": 6
+      },
+      "modbus_id": {
+        "vendor": "Danfoss",
+        "product": "Danfoss variable-frequency drive",
+        "revision": "5.6"
+      },
+      "vendors_matched": 6,
+      "ouis": [
+        "00:1B:08",
+        "00:0B:2D",
+        "00:07:68",
+        "28:9E:DF",
+        "58:57:0D",
+        "00:19:09"
+      ]
+    },
+    {
+      "id": "abb_robot",
+      "category": "robotics",
+      "label": "ABB industrial robot controller",
+      "vendors": [
+        "^ABB",
+        "ABB "
+      ],
+      "host": "robot-ctrl",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "profinet_dcp",
+        "opcua",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_opcua-tcp._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        4840
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Robot Controller",
+      "snmp": {
+        "descr": "ABB industrial robot controller, robot controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "ABB",
+        "product": "ABB industrial robot controller",
+        "revision": "4.1"
+      },
+      "profinet": {
+        "vendor_id": 0,
+        "device_id": 33777,
+        "role": 1
+      },
+      "vendors_matched": 27,
+      "ouis": [
+        "60:39:1F",
+        "00:1B:45",
+        "00:13:DD",
+        "00:12:93",
+        "00:13:86",
+        "50:31:AD",
+        "54:F8:76",
+        "00:24:59"
+      ]
+    },
+    {
+      "id": "rockwell_safety",
+      "category": "safety",
+      "label": "Rockwell safety controller",
+      "vendors": [
+        "Rockwell Automation"
+      ],
+      "host": "safety-plc",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "enip",
+        "cip_safety",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        44818
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Safety Controller",
+      "snmp": {
+        "descr": "Rockwell safety controller, safety controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Rockwell",
+        "product": "Rockwell safety controller",
+        "revision": "2.5"
+      },
+      "cip": {
+        "vendor_id": 0,
+        "device_type": 0,
+        "product_code": 159,
+        "rev_major": 2,
+        "rev_minor": 5
+      },
+      "vendors_matched": 14,
+      "ouis": [
+        "08:61:95",
+        "00:00:BC",
+        "F4:54:33",
+        "34:C0:F9",
+        "5C:88:16",
+        "BC:F4:99",
+        "5C:21:67",
+        "E4:90:69"
+      ]
+    },
+    {
+      "id": "philips_monitor",
+      "category": "medical",
+      "label": "Philips patient monitor",
+      "vendors": [
+        "Philips"
+      ],
+      "host": "patient-mon",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "dicom",
+        "hl7",
+        "dns_checkin",
+        "tls_checkin",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [
+        "devicecloud.philips.com"
+      ],
+      "udp_ports": [],
+      "ports": [
+        80,
+        443,
+        2575,
+        11112
+      ],
+      "http_server": "nginx",
+      "http_auth": "Basic",
+      "http_realm": "Clinical Device",
+      "snmp": {
+        "descr": "Philips patient monitor, networked clinical device",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Philips",
+        "product": "Philips patient monitor",
+        "revision": "2.5"
+      },
+      "vendors_matched": 19,
+      "ouis": [
+        "24:C4:2F",
+        "E8:C1:D7",
+        "7C:94:B2",
+        "00:05:4E",
+        "00:50:09",
+        "1C:5A:6B",
+        "00:1E:CF",
+        "00:17:88"
+      ]
+    },
+    {
+      "id": "ge_imaging",
+      "category": "medical",
+      "label": "GE medical imaging workstation",
+      "vendors": [
+        "General Electric",
+        "GE Healthcare"
+      ],
+      "host": "dicom-ws",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "dicom",
+        "hl7",
+        "dns_checkin",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [
+        "gehealthcare.com"
+      ],
+      "udp_ports": [],
+      "ports": [
+        80,
+        443,
+        2575,
+        11112
+      ],
+      "http_server": "nginx",
+      "http_auth": "Basic",
+      "http_realm": "Clinical Device",
+      "snmp": {
+        "descr": "GE medical imaging workstation, networked clinical device",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "GE",
+        "product": "GE medical imaging workstation",
+        "revision": "3.28"
+      },
+      "vendors_matched": 6,
+      "ouis": [
+        "44:4B:5D",
+        "90:83:7A",
+        "C4:B5:12",
+        "D8:93:41",
+        "08:00:19",
+        "D8:28:C9"
+      ]
+    },
+    {
+      "id": "schneider_knx",
+      "category": "building_automation",
+      "label": "Schneider KNX/IP building gateway",
+      "vendors": [
+        "Schneider Electric"
+      ],
+      "host": "knx-gw",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "knx",
+        "mdns",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [
+        3671
+      ],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Building Controller",
+      "snmp": {
+        "descr": "Schneider KNX/IP building gateway, building controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Schneider",
+        "product": "Schneider KNX/IP building gateway",
+        "revision": "1.18"
+      },
+      "vendors_matched": 15,
+      "ouis": [
+        "74:F6:61",
+        "20:44:3A",
+        "9C:0E:51",
+        "00:11:00",
+        "00:0C:81",
+        "00:00:54",
+        "00:03:74",
+        "00:13:24"
+      ]
+    },
+    {
+      "id": "rockwell_mtconnect",
+      "category": "manufacturing",
+      "label": "Rockwell MTConnect cell gateway",
+      "vendors": [
+        "Rockwell Automation"
+      ],
+      "host": "mtconnect",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "mtconnect",
+        "mqtt",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        1883,
+        7878
+      ],
+      "http_server": "nginx",
+      "http_auth": "Basic",
+      "http_realm": "Cell Gateway",
+      "snmp": {
+        "descr": "Rockwell MTConnect cell gateway, manufacturing cell gateway",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Rockwell",
+        "product": "Rockwell MTConnect cell gateway",
+        "revision": "3.2"
+      },
+      "vendors_matched": 14,
+      "ouis": [
+        "08:61:95",
+        "00:00:BC",
+        "F4:54:33",
+        "34:C0:F9",
+        "5C:88:16",
+        "BC:F4:99",
+        "5C:21:67",
+        "E4:90:69"
       ]
     }
   ]

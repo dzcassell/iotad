@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install runtime and packet tools
+        run: |
+          sudo apt-get update
+          sudo DEBIAN_FRONTEND=noninteractive apt-get install -y tshark
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+      - name: Compile and test
+        run: |
+          python -m py_compile iotad.py build_catalog.py tests/test_iotad.py
+          python -m unittest discover -s tests -v
+      - name: Verify generated catalog is current
+        run: |
+          python build_catalog.py --out /tmp/catalog.json
+          diff -u catalog.json /tmp/catalog.json
+      - name: Generate and validate PCAP
+        run: |
+          python iotad.py --config tests/ci.conf --once --pcap /tmp/iotad-ci.pcap
+          python scripts/validate_pcap.py /tmp/iotad-ci.pcap
+          tshark -r /tmp/iotad-ci.pcap -q -z io,phs
+      - name: Check tracked files for credential material
+        shell: bash
+        run: |
+          if git grep -IEn '(BEGIN (RSA |OPENSSH |EC )?PRIVATE KEY|github_pat_[A-Za-z0-9_]{20,}|ghp_[A-Za-z0-9]{20,}|sk-[A-Za-z0-9]{20,})' -- ':!.github/workflows/ci.yml'; then
+            echo 'Potential credential material found in tracked files' >&2
+            exit 1
+          fi
