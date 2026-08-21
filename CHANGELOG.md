@@ -7,6 +7,14 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Planned
+
+- Automated validation from an external probe host on each lab segment.
+- Role-aware controller-to-device relationships and production-line topology.
+- Additional IEC 61850 services and layer-2 substation traffic.
+
+## [0.4.0] - 2026-08-21
+
 ### Added
 
 - Default-on, independently rate-limited suspicious-traffic simulation with
@@ -25,12 +33,6 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 - Large mixed-facility rosters now include every catalog archetype at least
   once, guaranteeing broad protocol coverage while remaining deterministic.
-
-### Planned
-
-- Automated validation from an external probe host on each lab segment.
-- Role-aware controller-to-device relationships and production-line topology.
-- Additional IEC 61850 services and layer-2 substation traffic.
 
 ## [0.3.0] - 2026-08-21
 
@@ -111,3 +113,6 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 - Deterministic virtual-device roster using authentic IEEE vendor OUIs.
 - IoT/OT discovery emitters, active liveness responders, service
   fingerprinting, multi-site operation, and systemd service configuration.
+
+[Unreleased]: https://github.com/dzcassell/iotad/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/dzcassell/iotad/releases/tag/v0.4.0
