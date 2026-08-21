@@ -32,6 +32,10 @@ L2/L3 traffic those devices would emit.
 | Environmental / rack sensors | APC NetBotz, AKCP, Sensaphone | SNMP trap, mDNS, DHCP |
 | Wireless / IoT gateways | MultiTech (LoRaWAN) | mDNS, cloud DNS/TLS, DHCP |
 | Lighting | Lutron | mDNS, DHCP |
+| Clean-room systems | Siemens FFU controllers, gas/environment monitors | PROFINET, Modbus, BACnet, SNMP |
+| Process utilities | RO/DI skids, process instruments, VFDs | Modbus, OPC UA, HART-IP, EtherNet/IP |
+| Manufacturing | ABB robot controllers, Rockwell safety controllers | PROFINET, OPC UA, CIP Safety |
+| Medical / clinical | Philips monitors, GE imaging workstations | DICOM, HL7 MLLP, DNS/TLS |
 
 Each device also carries a realistic **DHCP fingerprint** (option 60 vendor
 class + option 55 parameter list) and hostname, which is what most discovery
@@ -69,6 +73,11 @@ transient candidate into a stable, fingerprinted inventory entry.
 Scheduled chatter (ARP/DHCP/mDNS/LLDP + OT polls and cloud check-ins) also
 follows a **diurnal** rhythm: full cadence in business hours, quieter overnight.
 
+The OT poll generators produce compact bidirectional TCP conversations rather
+than SYN-only probes for Modbus, S7, OPC UA, DNP3, IEC-104, Niagara Fox,
+MELSEC, HART-IP, CIP Safety, DICOM, and HL7. This gives flow and application
+identification engines request/response payloads to classify.
+
 > A **confirmed** device also passes the Socket's uRPF/anti-spoof filter, so its
 > flows route to the WAN — which is what makes true site-to-site OT traffic
 > possible (below).
@@ -100,6 +109,8 @@ single-site behavior is unchanged.
   oui.csv           IEEE OUI registry (refreshable)
   iotad.conf        sample config (installed to /etc/iotad.conf)
   iotad.service     systemd unit
+  requirements.txt  Python runtime dependency
+  tests/             protocol/config regression tests
   venv/             python venv with scapy
 /etc/iotad.conf     active config
 ```
@@ -115,7 +126,12 @@ Edit `/etc/iotad.conf`. The important knobs:
 - `device_count` — roster size (default 150; must fit the IP pool).
 - `seed` — same seed ⇒ identical roster across restarts, so the Cato inventory
   stays stable. Change it to reshuffle vendors/MACs/IPs.
+- `facility` — population preset: `mixed`, `industrial`, `manufacturing`,
+  `cleanroom`, `medical`, `water`, or `building`.
+- `scenario` — cadence preset: `baseline`, `commissioning`, `production`,
+  `maintenance`, or `incident`; `max_pps` remains the hard safety ceiling.
 - `categories` — blank for the full mix, or a comma-separated subset.
+  Explicit categories override the facility preset.
 - `[outbound] scope` — `subnet` (LAN + broadcast only), `wan` (also reach the
   internet), or `both`. WAN frames use spoofed source IPs and may be dropped by
   BCP38/uRPF upstream — expected and harmless for discovery.
@@ -130,12 +146,22 @@ Edit `/etc/iotad.conf`. The important knobs:
 # build + schedule + print every frame, but never transmit
 /opt/iotad/venv/bin/python /opt/iotad/iotad.py --dry-run --once
 
+# create a safe offline packet capture for Wireshark/tshark inspection
+/opt/iotad/venv/bin/python /opt/iotad/iotad.py --once --pcap /tmp/iotad.pcap
+
 # emit exactly one pass of every beacon, then exit (on-wire smoke test)
 sudo /opt/iotad/venv/bin/python /opt/iotad/iotad.py --once
 
 # run under systemd (continuous)
 sudo systemctl enable --now iotad
 journalctl -u iotad -f
+```
+
+Run the regression suite:
+
+```sh
+cd /opt/iotad
+venv/bin/python -m unittest discover -s tests -v
 ```
 
 Verify it on the wire from another host or the same box:

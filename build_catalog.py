@@ -343,6 +343,58 @@ PROFILES = [
          vendors=[r"MITSUBISHI ELECTRIC", r"Mitsubishi Electric"], host="melsec-q",
          beacons=["garp", "dhcp", "lldp", "melsec"],
          dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
+
+    # ---- clean-room / environmental control ----
+    dict(id="pms_particle", category="cleanroom",
+         label="Particle Measuring Systems airborne particle counter",
+         vendors=[r"PARTICLE MEASURING SYSTEMS"], host="particle-ctr",
+         beacons=["garp", "dhcp", "modbus", "bacnet_whois", "snmp"],
+         dhcp_class="", mdns=["_http._tcp"], ssdp_st=None, checkin=[]),
+    dict(id="siemens_ffu", category="cleanroom", label="Siemens fan-filter-unit controller",
+         vendors=[r"Siemens"], host="ffu-ctrl",
+         beacons=["garp", "dhcp", "lldp", "profinet_dcp", "modbus"],
+         dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
+    dict(id="honeywell_gas", category="environmental", label="Honeywell gas detector",
+         vendors=[r"Honeywell"], host="gas-det",
+         beacons=["garp", "dhcp", "modbus", "snmp"],
+         dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
+
+    # ---- process utilities / filtration ----
+    dict(id="eandh_instrument", category="instrumentation",
+         label="Endress+Hauser process instrument",
+         vendors=[r"Endress.*Hauser"], host="process-xmtr",
+         beacons=["garp", "dhcp", "modbus", "hartip"],
+         dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
+    dict(id="schneider_ro_skid", category="water_treatment",
+         label="Schneider RO/DI filtration skid controller",
+         vendors=[r"Schneider Electric"], host="ro-skid",
+         beacons=["garp", "dhcp", "modbus", "opcua"],
+         dhcp_class="", mdns=["_opcua-tcp._tcp"], ssdp_st=None, checkin=[]),
+    dict(id="danfoss_vfd", category="drive", label="Danfoss variable-frequency drive",
+         vendors=[r"Danfoss"], host="vfd",
+         beacons=["garp", "dhcp", "lldp", "modbus", "enip"],
+         dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
+
+    # ---- manufacturing floor ----
+    dict(id="abb_robot", category="robotics", label="ABB industrial robot controller",
+         vendors=[r"^ABB", r"ABB "], host="robot-ctrl",
+         beacons=["garp", "dhcp", "lldp", "profinet_dcp", "opcua"],
+         dhcp_class="", mdns=["_opcua-tcp._tcp"], ssdp_st=None, checkin=[]),
+    dict(id="rockwell_safety", category="safety", label="Rockwell safety controller",
+         vendors=[r"Rockwell Automation"], host="safety-plc",
+         beacons=["garp", "dhcp", "lldp", "enip", "cip_safety"],
+         dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
+
+    # ---- clinical / medical facility ----
+    dict(id="philips_monitor", category="medical", label="Philips patient monitor",
+         vendors=[r"Philips"], host="patient-mon",
+         beacons=["garp", "dhcp", "mdns", "dicom", "hl7", "dns_checkin", "tls_checkin"],
+         dhcp_class="", mdns=["_http._tcp"], ssdp_st=None,
+         checkin=["devicecloud.philips.com"]),
+    dict(id="ge_imaging", category="medical", label="GE medical imaging workstation",
+         vendors=[r"General Electric", r"GE Healthcare"], host="dicom-ws",
+         beacons=["garp", "dhcp", "dicom", "hl7", "dns_checkin"],
+         dhcp_class="", mdns=[], ssdp_st=None, checkin=["gehealthcare.com"]),
 ]
 
 
@@ -354,6 +406,7 @@ PROFILES = [
 PROTO_TCP_PORT = {
     "modbus": 502, "s7": 102, "enip": 44818, "opcua": 4840,
     "dnp3": 20000, "fox": 1911, "iec104": 2404, "melsec": 5007,
+    "hartip": 5094, "cip_safety": 44818, "dicom": 11112, "hl7": 2575,
 }
 MDNS_TCP_PORT = {
     "_http._tcp": 80, "_https._tcp": 443, "_rtsp._tcp": 554,
@@ -370,6 +423,9 @@ CATEGORY_BASE_PORTS = {
     "networking": [22, 80, 443], "printer": [80, 9100, 631],
     "av": [80], "power": [80], "environmental": [80],
     "lighting": [80], "voip": [80, 443], "iot_gateway": [22, 80, 443],
+    "cleanroom": [80, 502], "instrumentation": [80, 502],
+    "water_treatment": [80, 502], "drive": [80, 502],
+    "robotics": [80, 4840], "safety": [80, 44818], "medical": [80, 443],
 }
 # HTTP Server: header the device's web UI returns (embedded-web-server flavored).
 HTTP_BANNER = {
@@ -390,6 +446,9 @@ CATEGORY_HTTP_DEFAULT = {
     "rtu": "GoAhead-Webs", "building_automation": "GoAhead-Webs",
     "networking": "lighttpd", "power": "GoAhead-Webs",
     "environmental": "GoAhead-Webs", "voip": "Allegro-Software-RomPager/4.0",
+    "cleanroom": "GoAhead-Webs", "instrumentation": "GoAhead-Webs",
+    "water_treatment": "GoAhead-Webs", "drive": "GoAhead-Webs",
+    "robotics": "GoAhead-Webs", "safety": "GoAhead-Webs", "medical": "nginx",
 }
 # HTTP auth challenge: an embedded device's web UI answers "/" with 401 +
 # WWW-Authenticate, and the realm string is a routinely-scanned fingerprint.
@@ -430,6 +489,13 @@ CATEGORY_HTTP_REALM = {
     "iot_gateway": ("Basic", "Gateway"),
     "av": ("Basic", "Control System"),
     "lighting": ("Basic", "Lighting Controller"),
+    "cleanroom": ("Basic", "Environmental Monitor"),
+    "instrumentation": ("Basic", "Process Instrument"),
+    "water_treatment": ("Basic", "Skid Controller"),
+    "drive": ("Basic", "Drive Controller"),
+    "robotics": ("Basic", "Robot Controller"),
+    "safety": ("Basic", "Safety Controller"),
+    "medical": ("Basic", "Clinical Device"),
 }
 # SNMP sysDescr: the single richest fingerprint field. Real device-class strings
 # (not impersonating a specific unit's identity). {label} = the profile label.
@@ -445,6 +511,13 @@ SNMP_DESCR = {
     "hmi": "{label}, operator interface",
     "building_automation": "{label}, building controller",
     "rtu": "{label}, remote terminal unit",
+    "cleanroom": "{label}, clean-room environmental control",
+    "instrumentation": "{label}, process instrumentation",
+    "water_treatment": "{label}, process skid controller",
+    "drive": "{label}, motor drive",
+    "robotics": "{label}, robot controller",
+    "safety": "{label}, safety controller",
+    "medical": "{label}, networked clinical device",
 }
 # Enterprise PEN (1.3.6.1.4.1.<PEN>) only where confidently known; otherwise the
 # responder returns 0.0 ("unknown") rather than risk a misclassifying OID.
@@ -504,6 +577,9 @@ def _stable(key, mod, base=0):
 
 def enrich(p):
     """Attach responder identity: open TCP ports, HTTP banner, SNMP profile."""
+    p["beacons"] = list(p.get("beacons", []))
+    if "ntp" not in p["beacons"]:
+        p["beacons"].append("ntp")
     ports = set(CATEGORY_BASE_PORTS.get(p["category"], [80]))
     for b in p.get("beacons", []):
         if b in PROTO_TCP_PORT:
