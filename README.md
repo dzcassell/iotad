@@ -1,5 +1,8 @@
 # iotad — IoT/OT traffic simulation daemon
 
+[![Release](https://img.shields.io/github/v/release/dzcassell/iotad)](https://github.com/dzcassell/iotad/releases/latest)
+[![CI](https://github.com/dzcassell/iotad/actions/workflows/ci.yml/badge.svg)](https://github.com/dzcassell/iotad/actions/workflows/ci.yml)
+
 See [CHANGELOG.md](CHANGELOG.md) for the public change history.
 
 Populates a lab network with believable IoT/OT assets so network
