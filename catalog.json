@@ -1,0 +1,2437 @@
+{
+  "profiles": [
+    {
+      "id": "axis_camera",
+      "category": "ip_camera",
+      "label": "Axis network camera",
+      "vendors": [
+        "Axis Communications"
+      ],
+      "host": "axis-cam",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp",
+        "dns_checkin",
+        "tls_checkin"
+      ],
+      "dhcp_class": "AXIS,Network Camera",
+      "mdns": [
+        "_axis-video._tcp",
+        "_rtsp._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:axis-com:service:BasicService:1",
+      "checkin": [
+        "fw.axis.com",
+        "dispatch.axis.com"
+      ],
+      "ports": [
+        80,
+        443,
+        554
+      ],
+      "http_server": "gSOAP/2.8",
+      "http_auth": "Digest",
+      "http_realm": "AXIS Video Server",
+      "snmp": {
+        "descr": "Axis network camera, Linux embedded, IP surveillance",
+        "pen": 368
+      },
+      "identity": {
+        "vendor": "Axis Communications",
+        "product": "Axis network camera",
+        "revision": "5.6"
+      },
+      "ws_discovery": "NetworkVideoTransmitter",
+      "vendors_matched": 4,
+      "ouis": [
+        "B8:A4:4F",
+        "00:40:8C",
+        "E8:27:25",
+        "AC:CC:8E"
+      ]
+    },
+    {
+      "id": "hikvision_camera",
+      "category": "ip_camera",
+      "label": "Hikvision IP camera",
+      "vendors": [
+        "Hikvision"
+      ],
+      "host": "hik-ipc",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp",
+        "dns_checkin",
+        "tls_checkin"
+      ],
+      "dhcp_class": "Hikvision",
+      "mdns": [
+        "_rtsp._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [
+        "litedev.hik-connect.com",
+        "www.hikvisioneurope.com"
+      ],
+      "ports": [
+        80,
+        443,
+        554
+      ],
+      "http_server": "Hikvision-Webs",
+      "http_auth": "Digest",
+      "http_realm": "Network Camera",
+      "snmp": {
+        "descr": "Hikvision IP camera, Linux embedded, IP surveillance",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Hikvision",
+        "product": "Hikvision IP camera",
+        "revision": "6.33"
+      },
+      "ws_discovery": "NetworkVideoTransmitter",
+      "vendors_matched": 86,
+      "ouis": [
+        "0C:75:D2",
+        "54:8C:81",
+        "24:48:45",
+        "EC:C8:9C",
+        "8C:E7:48",
+        "24:28:FD",
+        "AC:B9:2F",
+        "D4:E8:53"
+      ]
+    },
+    {
+      "id": "dahua_camera",
+      "category": "ip_camera",
+      "label": "Dahua IP camera",
+      "vendors": [
+        "Dahua"
+      ],
+      "host": "dahua-ipc",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp",
+        "dns_checkin"
+      ],
+      "dhcp_class": "dahua",
+      "mdns": [
+        "_rtsp._tcp",
+        "_http._tcp",
+        "_dahua._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [
+        "www.easy4ip.com",
+        "p2p.dahuasecurity.com"
+      ],
+      "ports": [
+        80,
+        443,
+        554
+      ],
+      "http_server": "Boa/0.94.14rc21",
+      "http_auth": "Digest",
+      "http_realm": "Login to camera",
+      "snmp": {
+        "descr": "Dahua IP camera, Linux embedded, IP surveillance",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Dahua Technology",
+        "product": "Dahua IP camera",
+        "revision": "5.14"
+      },
+      "ws_discovery": "NetworkVideoTransmitter",
+      "vendors_matched": 33,
+      "ouis": [
+        "74:C9:29",
+        "6C:1C:71",
+        "08:ED:ED",
+        "E0:2E:FE",
+        "40:7A:A4",
+        "5C:F5:1A",
+        "FC:5F:49",
+        "24:52:6A"
+      ]
+    },
+    {
+      "id": "hanwha_camera",
+      "category": "ip_camera",
+      "label": "Hanwha/Samsung camera",
+      "vendors": [
+        "Hanwha",
+        "Samsung Techwin"
+      ],
+      "host": "hanwha-cam",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp"
+      ],
+      "dhcp_class": "SAMSUNG-NETWORK-CAMERA",
+      "mdns": [
+        "_rtsp._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [],
+      "ports": [
+        80,
+        443,
+        554
+      ],
+      "http_server": "iDVR",
+      "http_auth": "Digest",
+      "http_realm": "iPolis",
+      "snmp": {
+        "descr": "Hanwha/Samsung camera, Linux embedded, IP surveillance",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Hanwha Techwin",
+        "product": "Hanwha/Samsung camera",
+        "revision": "5.32"
+      },
+      "ws_discovery": "NetworkVideoTransmitter",
+      "vendors_matched": 4,
+      "ouis": [
+        "00:09:18",
+        "44:B4:23",
+        "8C:1D:55",
+        "E4:30:22"
+      ]
+    },
+    {
+      "id": "bosch_camera",
+      "category": "ip_camera",
+      "label": "Bosch security camera",
+      "vendors": [
+        "Bosch Security"
+      ],
+      "host": "bosch-cam",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp"
+      ],
+      "dhcp_class": "Bosch",
+      "mdns": [
+        "_rtsp._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [],
+      "ports": [
+        80,
+        443,
+        554
+      ],
+      "http_server": "VideoJet",
+      "http_auth": "Digest",
+      "http_realm": "Bosch Security Camera",
+      "snmp": {
+        "descr": "Bosch security camera, Linux embedded, IP surveillance",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Bosch Security Systems",
+        "product": "Bosch security camera",
+        "revision": "3.38"
+      },
+      "ws_discovery": "NetworkVideoTransmitter",
+      "vendors_matched": 2,
+      "ouis": [
+        "00:01:31",
+        "00:04:63"
+      ]
+    },
+    {
+      "id": "hid_reader",
+      "category": "access_control",
+      "label": "HID badge reader/controller",
+      "vendors": [
+        "HID Global"
+      ],
+      "host": "hid-edge",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "dns_checkin"
+      ],
+      "dhcp_class": "HID",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [
+        "mercury.hidglobal.com"
+      ],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Access Controller",
+      "identity": {
+        "vendor": "HID Global",
+        "product": "HID badge reader/controller",
+        "revision": "3.36"
+      },
+      "vendors_matched": 2,
+      "ouis": [
+        "00:30:8E",
+        "00:06:33"
+      ]
+    },
+    {
+      "id": "jci_bas",
+      "category": "building_automation",
+      "label": "Johnson Controls Metasys",
+      "vendors": [
+        "Johnson Controls"
+      ],
+      "host": "jci-nae",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "bacnet_whois",
+        "dns_checkin"
+      ],
+      "dhcp_class": "JCI-Metasys",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [
+        "updates.johnsoncontrols.com"
+      ],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Building Controller",
+      "snmp": {
+        "descr": "Johnson Controls Metasys, building controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Johnson Controls",
+        "product": "Johnson Controls Metasys",
+        "revision": "5.28"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:10:8D"
+      ]
+    },
+    {
+      "id": "honeywell_bas",
+      "category": "building_automation",
+      "label": "Honeywell controller",
+      "vendors": [
+        "Honeywell"
+      ],
+      "host": "hwl-ctrl",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "bacnet_whois"
+      ],
+      "dhcp_class": "Honeywell",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Building Controller",
+      "snmp": {
+        "descr": "Honeywell controller, building controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Honeywell",
+        "product": "Honeywell controller",
+        "revision": "4.3"
+      },
+      "vendors_matched": 22,
+      "ouis": [
+        "00:20:3D",
+        "00:40:84",
+        "14:41:46",
+        "00:1F:55",
+        "00:90:30",
+        "00:80:A7",
+        "58:FC:C8",
+        "0C:23:69"
+      ]
+    },
+    {
+      "id": "emerson_hvac",
+      "category": "hvac",
+      "label": "Emerson environmental controller",
+      "vendors": [
+        "Emerson"
+      ],
+      "host": "emerson-env",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "bacnet_whois"
+      ],
+      "dhcp_class": "Emerson",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "lighttpd",
+      "identity": {
+        "vendor": "Emerson",
+        "product": "Emerson environmental controller",
+        "revision": "2.1"
+      },
+      "vendors_matched": 7,
+      "ouis": [
+        "00:24:3D",
+        "00:09:F5",
+        "00:03:AD",
+        "00:E0:86",
+        "10:3A:5D",
+        "00:12:0A",
+        "00:40:03"
+      ]
+    },
+    {
+      "id": "siemens_plc",
+      "category": "plc",
+      "label": "Siemens S7 PLC",
+      "vendors": [
+        "SIEMENS AG",
+        "Siemens (Industrial|AG|Numerical|Building)"
+      ],
+      "host": "s7-plc",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "s7",
+        "profinet_dcp"
+      ],
+      "dhcp_class": "Siemens",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        102
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "Siemens S7 PLC, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Siemens",
+        "product": "Siemens S7 PLC",
+        "revision": "4.13"
+      },
+      "vendors_matched": 38,
+      "ouis": [
+        "E0:DC:A0",
+        "38:4B:24",
+        "EC:1C:5D",
+        "10:D6:57",
+        "4C:E7:05",
+        "00:0E:8C",
+        "28:63:36",
+        "00:C0:E4"
+      ]
+    },
+    {
+      "id": "rockwell_plc",
+      "category": "plc",
+      "label": "Rockwell/Allen-Bradley PLC",
+      "vendors": [
+        "Rockwell",
+        "Allen-Bradley"
+      ],
+      "host": "ab-logix",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "enip"
+      ],
+      "dhcp_class": "Allen-Bradley",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        44818
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "Rockwell/Allen-Bradley PLC, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Rockwell Automation",
+        "product": "Rockwell/Allen-Bradley PLC",
+        "revision": "3.22"
+      },
+      "cip": {
+        "vendor_id": 1,
+        "device_type": 0,
+        "product_code": 440,
+        "rev_major": 3,
+        "rev_minor": 22
+      },
+      "vendors_matched": 14,
+      "ouis": [
+        "08:61:95",
+        "00:00:BC",
+        "F4:54:33",
+        "34:C0:F9",
+        "5C:88:16",
+        "BC:F4:99",
+        "5C:21:67",
+        "E4:90:69"
+      ]
+    },
+    {
+      "id": "schneider_plc",
+      "category": "plc",
+      "label": "Schneider Modicon PLC",
+      "vendors": [
+        "Schneider Electric"
+      ],
+      "host": "modicon",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "modbus"
+      ],
+      "dhcp_class": "Schneider-Electric",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "Schneider Modicon PLC, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Schneider Electric",
+        "product": "Schneider Modicon PLC",
+        "revision": "3.24"
+      },
+      "modbus_id": {
+        "vendor": "Schneider Electric",
+        "product": "Schneider Modicon PLC",
+        "revision": "3.24"
+      },
+      "vendors_matched": 15,
+      "ouis": [
+        "74:F6:61",
+        "20:44:3A",
+        "9C:0E:51",
+        "00:11:00",
+        "00:0C:81",
+        "00:00:54",
+        "00:03:74",
+        "00:13:24"
+      ]
+    },
+    {
+      "id": "beckhoff_plc",
+      "category": "plc",
+      "label": "Beckhoff industrial PC",
+      "vendors": [
+        "Beckhoff"
+      ],
+      "host": "beckhoff",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "modbus"
+      ],
+      "dhcp_class": "Beckhoff",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "Beckhoff industrial PC, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Beckhoff Automation",
+        "product": "Beckhoff industrial PC",
+        "revision": "6.31"
+      },
+      "modbus_id": {
+        "vendor": "Beckhoff Automation",
+        "product": "Beckhoff industrial PC",
+        "revision": "6.31"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:01:05"
+      ]
+    },
+    {
+      "id": "wago_plc",
+      "category": "plc",
+      "label": "WAGO fieldbus controller",
+      "vendors": [
+        "WAGO"
+      ],
+      "host": "wago-plc",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "modbus"
+      ],
+      "dhcp_class": "WAGO",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "WAGO fieldbus controller, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "WAGO",
+        "product": "WAGO fieldbus controller",
+        "revision": "2.3"
+      },
+      "modbus_id": {
+        "vendor": "WAGO",
+        "product": "WAGO fieldbus controller",
+        "revision": "2.3"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:30:DE"
+      ]
+    },
+    {
+      "id": "phoenix_io",
+      "category": "plc",
+      "label": "Phoenix Contact I/O",
+      "vendors": [
+        "Phoenix Contact"
+      ],
+      "host": "phoenix-io",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "modbus"
+      ],
+      "dhcp_class": "PhoenixContact",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "Phoenix Contact I/O, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Phoenix Contact",
+        "product": "Phoenix Contact I/O",
+        "revision": "4.7"
+      },
+      "modbus_id": {
+        "vendor": "Phoenix Contact",
+        "product": "Phoenix Contact I/O",
+        "revision": "4.7"
+      },
+      "vendors_matched": 3,
+      "ouis": [
+        "A8:74:1D",
+        "CC:CC:EA",
+        "00:A0:45"
+      ]
+    },
+    {
+      "id": "moxa_gw",
+      "category": "industrial_networking",
+      "label": "Moxa serial device server",
+      "vendors": [
+        "Moxa"
+      ],
+      "host": "moxa-nport",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp"
+      ],
+      "dhcp_class": "Moxa",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Managed Switch",
+      "snmp": {
+        "descr": "Moxa serial device server, industrial ethernet",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Moxa",
+        "product": "Moxa serial device server",
+        "revision": "6.31"
+      },
+      "vendors_matched": 2,
+      "ouis": [
+        "00:90:E8",
+        "50:0B:88"
+      ]
+    },
+    {
+      "id": "advantech_gw",
+      "category": "industrial_networking",
+      "label": "Advantech edge gateway",
+      "vendors": [
+        "Advantech"
+      ],
+      "host": "advantech",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "modbus"
+      ],
+      "dhcp_class": "Advantech",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443,
+        502
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Managed Switch",
+      "snmp": {
+        "descr": "Advantech edge gateway, industrial ethernet",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Advantech",
+        "product": "Advantech edge gateway",
+        "revision": "3.12"
+      },
+      "modbus_id": {
+        "vendor": "Advantech",
+        "product": "Advantech edge gateway",
+        "revision": "3.12"
+      },
+      "vendors_matched": 9,
+      "ouis": [
+        "74:FE:48",
+        "00:0B:AB",
+        "C4:B1:6B",
+        "C4:00:AD",
+        "00:D0:C9",
+        "00:14:53",
+        "00:0E:02",
+        "CC:82:7F"
+      ]
+    },
+    {
+      "id": "hirschmann_sw",
+      "category": "industrial_networking",
+      "label": "Hirschmann industrial switch",
+      "vendors": [
+        "Hirschmann"
+      ],
+      "host": "hirschmann",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp"
+      ],
+      "dhcp_class": "Hirschmann",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Managed Switch",
+      "snmp": {
+        "descr": "Hirschmann industrial switch, industrial ethernet",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Hirschmann (Belden)",
+        "product": "Hirschmann industrial switch",
+        "revision": "2.1"
+      },
+      "vendors_matched": 11,
+      "ouis": [
+        "EC:E5:55",
+        "74:0B:B0",
+        "94:AE:E3",
+        "A0:26:05",
+        "A0:B0:86",
+        "64:60:38",
+        "00:D0:26",
+        "94:FC:87"
+      ]
+    },
+    {
+      "id": "ubiquiti_ap",
+      "category": "networking",
+      "label": "Ubiquiti access point",
+      "vendors": [
+        "Ubiquiti"
+      ],
+      "host": "ubnt-ap",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "ubnt_discover",
+        "dns_checkin"
+      ],
+      "dhcp_class": "ubnt",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [
+        "fw-update.ubnt.com"
+      ],
+      "ports": [
+        22,
+        80,
+        443
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "UniFi",
+      "snmp": {
+        "descr": "Ubiquiti access point, managed switch",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Ubiquiti",
+        "product": "Ubiquiti access point",
+        "revision": "6.1"
+      },
+      "vendors_matched": 48,
+      "ouis": [
+        "F0:9F:C2",
+        "80:2A:A8",
+        "78:8A:20",
+        "74:83:C2",
+        "E0:63:DA",
+        "24:5A:4C",
+        "60:22:32",
+        "E4:38:83"
+      ]
+    },
+    {
+      "id": "cisco_switch",
+      "category": "networking",
+      "label": "Cisco switch",
+      "vendors": [
+        "Cisco Systems",
+        "^Cisco$"
+      ],
+      "host": "cisco-sw",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "cdp"
+      ],
+      "dhcp_class": "Cisco",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        22,
+        80,
+        443
+      ],
+      "http_server": "cisco-IOS",
+      "http_auth": "Basic",
+      "http_realm": "level_15_access",
+      "snmp": {
+        "descr": "Cisco switch, managed switch",
+        "pen": 9
+      },
+      "identity": {
+        "vendor": "Cisco Systems",
+        "product": "Cisco switch",
+        "revision": "2.27"
+      },
+      "vendors_matched": 1248,
+      "ouis": [
+        "E8:0A:B9",
+        "48:1B:A4",
+        "6C:03:B5",
+        "90:88:55",
+        "68:71:61",
+        "4C:EC:0F",
+        "5C:64:F1",
+        "5C:3E:06"
+      ]
+    },
+    {
+      "id": "zebra_printer",
+      "category": "printer",
+      "label": "Zebra label printer",
+      "vendors": [
+        "Zebra Techn"
+      ],
+      "host": "zebra-zt",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp"
+      ],
+      "dhcp_class": "Zebra",
+      "mdns": [
+        "_printer._tcp",
+        "_pdl-datastream._tcp",
+        "_ipp._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "Zebra/1.0",
+      "http_auth": "Basic",
+      "http_realm": "Zebra Printer",
+      "snmp": {
+        "descr": "Zebra label printer; firmware NB.2, embedded print server",
+        "pen": 10642
+      },
+      "identity": {
+        "vendor": "Zebra Technologies",
+        "product": "Zebra label printer",
+        "revision": "3.32"
+      },
+      "vendors_matched": 17,
+      "ouis": [
+        "90:75:DE",
+        "94:FB:29",
+        "84:24:8D",
+        "00:23:68",
+        "00:07:4D",
+        "00:A0:F8",
+        "FC:59:7A",
+        "40:83:DE"
+      ]
+    },
+    {
+      "id": "hp_mfp",
+      "category": "printer",
+      "label": "HP LaserJet/OfficeJet MFP",
+      "vendors": [
+        "Hewlett[ -]?Packard",
+        "\\bHP\\b",
+        "HP Inc"
+      ],
+      "host": "hp-laserjet",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp",
+        "dns_checkin"
+      ],
+      "dhcp_class": "Hewlett-Packard JetDirect",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_ipps._tcp",
+        "_pdl-datastream._tcp",
+        "_uscan._tcp",
+        "_http._tcp",
+        "_privet._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [
+        "www.hpeprint.com",
+        "chat.hpeprint.com",
+        "h20180.www2.hp.com"
+      ],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "HP HTTP Server",
+      "http_auth": "Basic",
+      "http_realm": "HP LaserJet",
+      "snmp": {
+        "descr": "HP LaserJet/OfficeJet MFP; firmware NB.2, embedded print server",
+        "pen": 11
+      },
+      "identity": {
+        "vendor": "HP",
+        "product": "HP LaserJet/OfficeJet MFP",
+        "revision": "2.17"
+      },
+      "vendors_matched": 380,
+      "ouis": [
+        "64:4E:D7",
+        "7C:4D:8F",
+        "5C:60:BA",
+        "50:81:40",
+        "F8:0D:AC",
+        "04:0E:3C",
+        "9C:7B:EF",
+        "10:E7:C6"
+      ]
+    },
+    {
+      "id": "canon_mfp",
+      "category": "printer",
+      "label": "Canon imageRUNNER MFP",
+      "vendors": [
+        "Canon"
+      ],
+      "host": "canon-ir",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp"
+      ],
+      "dhcp_class": "Canon",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_pdl-datastream._tcp",
+        "_scanner._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "CANON HTTP Server",
+      "http_auth": "Basic",
+      "http_realm": "Canon Remote UI",
+      "snmp": {
+        "descr": "Canon imageRUNNER MFP; firmware NB.2, embedded print server",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Canon",
+        "product": "Canon imageRUNNER MFP",
+        "revision": "3.2"
+      },
+      "vendors_matched": 28,
+      "ouis": [
+        "84:BA:3B",
+        "60:12:8B",
+        "00:02:20",
+        "5C:62:5A",
+        "74:38:B7",
+        "00:BB:C1",
+        "F4:81:39",
+        "00:1E:8F"
+      ]
+    },
+    {
+      "id": "epson_mfp",
+      "category": "printer",
+      "label": "Epson WorkForce MFP",
+      "vendors": [
+        "Seiko Epson"
+      ],
+      "host": "epson-wf",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp",
+        "dns_checkin"
+      ],
+      "dhcp_class": "EPSON",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_ipps._tcp",
+        "_pdl-datastream._tcp",
+        "_uscan._tcp",
+        "_scanner._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [
+        "epsonconnect.com",
+        "pool.epsonconnect.com"
+      ],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "EPSON-HTTP/1.0",
+      "http_auth": "Basic",
+      "http_realm": "Printer",
+      "snmp": {
+        "descr": "Epson WorkForce MFP; firmware NB.2, embedded print server",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Seiko Epson",
+        "product": "Epson WorkForce MFP",
+        "revision": "5.6"
+      },
+      "vendors_matched": 22,
+      "ouis": [
+        "A4:D7:3C",
+        "50:57:9C",
+        "00:26:AB",
+        "58:05:D9",
+        "BC:C8:CC",
+        "64:C6:D2",
+        "64:EB:8C",
+        "D4:80:8B"
+      ]
+    },
+    {
+      "id": "brother_mfp",
+      "category": "printer",
+      "label": "Brother MFC printer",
+      "vendors": [
+        "Brother"
+      ],
+      "host": "brother-mfc",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp"
+      ],
+      "dhcp_class": "Brother",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_pdl-datastream._tcp",
+        "_scanner._tcp",
+        "_uscan._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "debut/1.20",
+      "http_auth": "Basic",
+      "http_realm": "Printer",
+      "snmp": {
+        "descr": "Brother MFC printer; firmware NB.2, embedded print server",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Brother",
+        "product": "Brother MFC printer",
+        "revision": "4.25"
+      },
+      "vendors_matched": 8,
+      "ouis": [
+        "00:80:77",
+        "B0:7C:8E",
+        "00:1B:A9",
+        "3C:2A:F4",
+        "30:05:5C",
+        "00:17:87",
+        "94:DD:F8",
+        "B4:22:00"
+      ]
+    },
+    {
+      "id": "xerox_mfp",
+      "category": "printer",
+      "label": "Xerox WorkCentre MFP",
+      "vendors": [
+        "Xerox"
+      ],
+      "host": "xerox-wc",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp"
+      ],
+      "dhcp_class": "XEROX",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_pdl-datastream._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "Xerox_MicroServer",
+      "http_auth": "Basic",
+      "http_realm": "Xerox WebUI",
+      "snmp": {
+        "descr": "Xerox WorkCentre MFP; firmware NB.2, embedded print server",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Xerox",
+        "product": "Xerox WorkCentre MFP",
+        "revision": "4.31"
+      },
+      "vendors_matched": 14,
+      "ouis": [
+        "00:00:04",
+        "9C:93:4E",
+        "00:00:AA",
+        "00:00:01",
+        "00:00:05",
+        "00:00:07",
+        "00:00:09",
+        "E8:4D:EC"
+      ]
+    },
+    {
+      "id": "lexmark_mfp",
+      "category": "printer",
+      "label": "Lexmark laser printer",
+      "vendors": [
+        "Lexmark"
+      ],
+      "host": "lexmark",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp"
+      ],
+      "dhcp_class": "Lexmark",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_pdl-datastream._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "Lexmark Web Server",
+      "http_auth": "Basic",
+      "http_realm": "Printer",
+      "snmp": {
+        "descr": "Lexmark laser printer; firmware NB.2, embedded print server",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Lexmark",
+        "product": "Lexmark laser printer",
+        "revision": "2.3"
+      },
+      "vendors_matched": 5,
+      "ouis": [
+        "00:21:B7",
+        "00:20:00",
+        "78:8C:77",
+        "00:04:00",
+        "00:84:ED"
+      ]
+    },
+    {
+      "id": "ricoh_mfp",
+      "category": "printer",
+      "label": "Ricoh Aficio MFP",
+      "vendors": [
+        "Ricoh"
+      ],
+      "host": "ricoh-aficio",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp"
+      ],
+      "dhcp_class": "RICOH",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_pdl-datastream._tcp",
+        "_scanner._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "Web-Server/3.0",
+      "http_auth": "Basic",
+      "http_realm": "Printer",
+      "snmp": {
+        "descr": "Ricoh Aficio MFP; firmware NB.2, embedded print server",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Ricoh",
+        "product": "Ricoh Aficio MFP",
+        "revision": "1.20"
+      },
+      "vendors_matched": 5,
+      "ouis": [
+        "58:38:79",
+        "00:26:73",
+        "00:0B:DD",
+        "00:00:74",
+        "00:18:21"
+      ]
+    },
+    {
+      "id": "konica_mfp",
+      "category": "printer",
+      "label": "Konica Minolta bizhub MFP",
+      "vendors": [
+        "Konica"
+      ],
+      "host": "km-bizhub",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "snmp"
+      ],
+      "dhcp_class": "KONICA MINOLTA",
+      "mdns": [
+        "_printer._tcp",
+        "_ipp._tcp",
+        "_pdl-datastream._tcp",
+        "_scanner._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
+      "checkin": [],
+      "ports": [
+        80,
+        631,
+        9100
+      ],
+      "http_server": "KM-MFP-Http/1.0",
+      "http_auth": "Basic",
+      "http_realm": "Printer",
+      "snmp": {
+        "descr": "Konica Minolta bizhub MFP; firmware NB.2, embedded print server",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Konica Minolta",
+        "product": "Konica Minolta bizhub MFP",
+        "revision": "3.36"
+      },
+      "vendors_matched": 3,
+      "ouis": [
+        "00:50:AA",
+        "08:00:86",
+        "00:20:6B"
+      ]
+    },
+    {
+      "id": "crestron_av",
+      "category": "av",
+      "label": "Crestron control processor",
+      "vendors": [
+        "Crestron"
+      ],
+      "host": "crestron",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp"
+      ],
+      "dhcp_class": "Crestron",
+      "mdns": [
+        "_crestron._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Control System",
+      "identity": {
+        "vendor": "Crestron",
+        "product": "Crestron control processor",
+        "revision": "4.25"
+      },
+      "vendors_matched": 3,
+      "ouis": [
+        "C4:42:68",
+        "00:10:7F",
+        "94:88:35"
+      ]
+    },
+    {
+      "id": "apc_ups",
+      "category": "power",
+      "label": "APC network UPS",
+      "vendors": [
+        "American Power Conversion"
+      ],
+      "host": "apc-ups",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "snmp"
+      ],
+      "dhcp_class": "APC",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "Aais/1.0",
+      "http_auth": "Basic",
+      "http_realm": "APC Management Card",
+      "snmp": {
+        "descr": "APC network UPS, network management card",
+        "pen": 318
+      },
+      "identity": {
+        "vendor": "APC (Schneider Electric)",
+        "product": "APC network UPS",
+        "revision": "5.20"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:C0:B7"
+      ]
+    },
+    {
+      "id": "liebert_ups",
+      "category": "power",
+      "label": "Vertiv/Liebert power unit",
+      "vendors": [
+        "Liebert",
+        "Vertiv"
+      ],
+      "host": "liebert",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "snmp"
+      ],
+      "dhcp_class": "Liebert",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "Liebert-Web",
+      "http_auth": "Basic",
+      "http_realm": "Liebert Web Card",
+      "snmp": {
+        "descr": "Vertiv/Liebert power unit, network management card",
+        "pen": 476
+      },
+      "identity": {
+        "vendor": "Vertiv",
+        "product": "Vertiv/Liebert power unit",
+        "revision": "6.5"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:08:77"
+      ]
+    },
+    {
+      "id": "lutron_lighting",
+      "category": "lighting",
+      "label": "Lutron lighting processor",
+      "vendors": [
+        "Lutron"
+      ],
+      "host": "lutron",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns"
+      ],
+      "dhcp_class": "Lutron",
+      "mdns": [
+        "_lutron._tcp",
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Lighting Controller",
+      "identity": {
+        "vendor": "Lutron",
+        "product": "Lutron lighting processor",
+        "revision": "3.14"
+      },
+      "vendors_matched": 3,
+      "ouis": [
+        "7C:FE:28",
+        "00:0F:E7",
+        "00:21:EC"
+      ]
+    },
+    {
+      "id": "cisco_phone",
+      "category": "voip",
+      "label": "Cisco IP phone",
+      "vendors": [
+        "Cisco Systems"
+      ],
+      "host": "cisco-sep",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "cdp"
+      ],
+      "lldp_med": "voice",
+      "dhcp_class": "Cisco Systems, Inc. IP Phone CP-8841",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "Allegro-Software-RomPager/4.0",
+      "http_auth": "Basic",
+      "http_realm": "Phone",
+      "identity": {
+        "vendor": "Cisco Systems",
+        "product": "Cisco IP phone",
+        "revision": "2.33"
+      },
+      "vendors_matched": 1248,
+      "ouis": [
+        "E8:0A:B9",
+        "48:1B:A4",
+        "6C:03:B5",
+        "90:88:55",
+        "68:71:61",
+        "4C:EC:0F",
+        "5C:64:F1",
+        "5C:3E:06"
+      ]
+    },
+    {
+      "id": "polycom_phone",
+      "category": "voip",
+      "label": "Poly/Polycom VVX phone",
+      "vendors": [
+        "Polycom"
+      ],
+      "host": "polycom-vvx",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp"
+      ],
+      "lldp_med": "voice",
+      "dhcp_class": "Polycom-VVX411",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "Allegro-Software-RomPager/4.0",
+      "http_auth": "Basic",
+      "http_realm": "Phone",
+      "identity": {
+        "vendor": "Poly",
+        "product": "Poly/Polycom VVX phone",
+        "revision": "2.21"
+      },
+      "vendors_matched": 2,
+      "ouis": [
+        "64:16:7F",
+        "00:04:F2"
+      ]
+    },
+    {
+      "id": "yealink_phone",
+      "category": "voip",
+      "label": "Yealink SIP phone",
+      "vendors": [
+        "Yealink"
+      ],
+      "host": "yealink-t46",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp"
+      ],
+      "lldp_med": "voice",
+      "dhcp_class": "yealink",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "Allegro-Software-RomPager/4.0",
+      "http_auth": "Basic",
+      "http_realm": "Phone",
+      "identity": {
+        "vendor": "Yealink",
+        "product": "Yealink SIP phone",
+        "revision": "6.35"
+      },
+      "vendors_matched": 11,
+      "ouis": [
+        "44:DB:D2",
+        "80:5E:C0",
+        "EC:1D:A9",
+        "64:4F:56",
+        "24:9A:D8",
+        "80:5E:0C",
+        "34:97:D7",
+        "C4:FC:22"
+      ]
+    },
+    {
+      "id": "avaya_phone",
+      "category": "voip",
+      "label": "Avaya IP phone",
+      "vendors": [
+        "Avaya"
+      ],
+      "host": "avaya-j179",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp"
+      ],
+      "lldp_med": "voice",
+      "dhcp_class": "ccp.avaya.com",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "Allegro-Software-RomPager/4.0",
+      "http_auth": "Basic",
+      "http_realm": "Phone",
+      "identity": {
+        "vendor": "Avaya",
+        "product": "Avaya IP phone",
+        "revision": "3.0"
+      },
+      "vendors_matched": 54,
+      "ouis": [
+        "3C:B1:5B",
+        "C8:1F:EA",
+        "34:75:C7",
+        "B0:AD:AA",
+        "B4:47:5E",
+        "BC:AD:AB",
+        "FC:A8:41",
+        "24:D9:21"
+      ]
+    },
+    {
+      "id": "siemens_hmi",
+      "category": "hmi",
+      "label": "Siemens SIMATIC HMI panel",
+      "vendors": [
+        "Siemens"
+      ],
+      "host": "simatic-hmi",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "s7",
+        "profinet_dcp"
+      ],
+      "dhcp_class": "Siemens",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        102
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Operator Panel",
+      "snmp": {
+        "descr": "Siemens SIMATIC HMI panel, operator interface",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Siemens",
+        "product": "Siemens SIMATIC HMI panel",
+        "revision": "1.24"
+      },
+      "vendors_matched": 61,
+      "ouis": [
+        "E0:DC:A0",
+        "90:DA:F9",
+        "38:4B:24",
+        "EC:1C:5D",
+        "50:00:84",
+        "00:11:06",
+        "00:90:40",
+        "00:A0:03"
+      ]
+    },
+    {
+      "id": "rockwell_hmi",
+      "category": "hmi",
+      "label": "Rockwell PanelView HMI",
+      "vendors": [
+        "Rockwell"
+      ],
+      "host": "panelview",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "enip"
+      ],
+      "dhcp_class": "Allen-Bradley",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        44818
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Operator Panel",
+      "snmp": {
+        "descr": "Rockwell PanelView HMI, operator interface",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Rockwell Automation",
+        "product": "Rockwell PanelView HMI",
+        "revision": "4.35"
+      },
+      "cip": {
+        "vendor_id": 1,
+        "device_type": 0,
+        "product_code": 281,
+        "rev_major": 4,
+        "rev_minor": 35
+      },
+      "vendors_matched": 14,
+      "ouis": [
+        "08:61:95",
+        "00:00:BC",
+        "F4:54:33",
+        "34:C0:F9",
+        "5C:88:16",
+        "BC:F4:99",
+        "5C:21:67",
+        "E4:90:69"
+      ]
+    },
+    {
+      "id": "hikvision_nvr",
+      "category": "nvr",
+      "label": "Hikvision NVR",
+      "vendors": [
+        "Hangzhou Hikvision"
+      ],
+      "host": "hik-nvr",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp",
+        "dns_checkin"
+      ],
+      "dhcp_class": "Hikvision",
+      "mdns": [
+        "_http._tcp",
+        "_rtsp._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [
+        "litedev.hik-connect.com"
+      ],
+      "ports": [
+        80,
+        443,
+        554
+      ],
+      "http_server": "Hikvision-Webs",
+      "http_auth": "Digest",
+      "http_realm": "Network Video Recorder",
+      "snmp": {
+        "descr": "Hikvision NVR, network video recorder",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Hikvision",
+        "product": "Hikvision NVR",
+        "revision": "5.38"
+      },
+      "vendors_matched": 84,
+      "ouis": [
+        "0C:75:D2",
+        "54:8C:81",
+        "24:48:45",
+        "EC:C8:9C",
+        "8C:E7:48",
+        "24:28:FD",
+        "AC:B9:2F",
+        "D4:E8:53"
+      ]
+    },
+    {
+      "id": "synology_nvr",
+      "category": "nvr",
+      "label": "Synology Surveillance NVR",
+      "vendors": [
+        "Synology"
+      ],
+      "host": "synology-nvr",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp",
+        "_smb._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [],
+      "ports": [
+        80,
+        443,
+        445,
+        554
+      ],
+      "http_server": "Boa/0.94.14rc21",
+      "http_auth": "Digest",
+      "http_realm": "Network Video Recorder",
+      "snmp": {
+        "descr": "Synology Surveillance NVR, network video recorder",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Synology",
+        "product": "Synology Surveillance NVR",
+        "revision": "1.14"
+      },
+      "vendors_matched": 2,
+      "ouis": [
+        "90:09:D0",
+        "00:11:32"
+      ]
+    },
+    {
+      "id": "apc_netbotz",
+      "category": "environmental",
+      "label": "APC NetBotz rack sensor",
+      "vendors": [
+        "American Power Conversion",
+        "NetBotz"
+      ],
+      "host": "netbotz",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "snmp",
+        "mdns"
+      ],
+      "dhcp_class": "APC",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "NetBotz/1.0",
+      "http_auth": "Basic",
+      "http_realm": "Monitoring Appliance",
+      "snmp": {
+        "descr": "APC NetBotz rack sensor, environmental monitoring appliance",
+        "pen": 5528
+      },
+      "identity": {
+        "vendor": "APC (Schneider Electric)",
+        "product": "APC NetBotz rack sensor",
+        "revision": "3.20"
+      },
+      "vendors_matched": 2,
+      "ouis": [
+        "00:02:D3",
+        "00:C0:B7"
+      ]
+    },
+    {
+      "id": "akcp_sensor",
+      "category": "environmental",
+      "label": "AKCP sensorProbe monitor",
+      "vendors": [
+        "AKCP"
+      ],
+      "host": "akcp-sp",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "snmp",
+        "mdns"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Monitoring Appliance",
+      "snmp": {
+        "descr": "AKCP sensorProbe monitor, environmental monitoring appliance",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "AKCP",
+        "product": "AKCP sensorProbe monitor",
+        "revision": "2.15"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:0B:DC"
+      ]
+    },
+    {
+      "id": "sensaphone_env",
+      "category": "environmental",
+      "label": "Sensaphone monitor",
+      "vendors": [
+        "Sensaphone"
+      ],
+      "host": "sensaphone",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "snmp"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Monitoring Appliance",
+      "snmp": {
+        "descr": "Sensaphone monitor, environmental monitoring appliance",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Sensaphone",
+        "product": "Sensaphone monitor",
+        "revision": "6.33"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:07:F9"
+      ]
+    },
+    {
+      "id": "twon_intercom",
+      "category": "intercom",
+      "label": "2N IP intercom/door station",
+      "vendors": [
+        "2N TELEKOMUNIKACE",
+        "2N Telekomunikace"
+      ],
+      "host": "2n-intercom",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp"
+      ],
+      "dhcp_class": "2N",
+      "mdns": [
+        "_http._tcp",
+        "_sip._udp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Digest",
+      "http_realm": "Door Station",
+      "identity": {
+        "vendor": "2N (Axis)",
+        "product": "2N IP intercom/door station",
+        "revision": "6.27"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "7C:1E:B3"
+      ]
+    },
+    {
+      "id": "aiphone_intercom",
+      "category": "intercom",
+      "label": "Aiphone IX door station",
+      "vendors": [
+        "Aiphone"
+      ],
+      "host": "aiphone-ix",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "ssdp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
+      "checkin": [],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Digest",
+      "http_realm": "Door Station",
+      "identity": {
+        "vendor": "Aiphone",
+        "product": "Aiphone IX door station",
+        "revision": "2.11"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:0B:AA"
+      ]
+    },
+    {
+      "id": "multitech_lora",
+      "category": "iot_gateway",
+      "label": "MultiTech LoRaWAN gateway",
+      "vendors": [
+        "Multi-Tech Systems",
+        "MultiTech"
+      ],
+      "host": "mtcdt-lora",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "mdns",
+        "dns_checkin",
+        "tls_checkin"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp",
+        "_ssh._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [
+        "updates.multitech.net"
+      ],
+      "ports": [
+        22,
+        80,
+        443
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Gateway",
+      "identity": {
+        "vendor": "MultiTech",
+        "product": "MultiTech LoRaWAN gateway",
+        "revision": "4.33"
+      },
+      "vendors_matched": 2,
+      "ouis": [
+        "00:08:00",
+        "00:80:00"
+      ]
+    },
+    {
+      "id": "br_plc",
+      "category": "plc",
+      "label": "B&R industrial controller",
+      "vendors": [
+        "B&R Industrial",
+        "Bernecker"
+      ],
+      "host": "br-x20",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "opcua",
+        "profinet_dcp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_opcua-tcp._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        4840
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "B&R industrial controller, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "B&R Industrial Automation",
+        "product": "B&R industrial controller",
+        "revision": "2.37"
+      },
+      "vendors_matched": 3,
+      "ouis": [
+        "00:60:65",
+        "00:15:1E",
+        "00:11:1E"
+      ]
+    },
+    {
+      "id": "sel_rtu",
+      "category": "rtu",
+      "label": "SEL protection relay/RTU",
+      "vendors": [
+        "Schweitzer"
+      ],
+      "host": "sel-relay",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "dnp3"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        20000
+      ],
+      "snmp": {
+        "descr": "SEL protection relay/RTU, remote terminal unit",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Schweitzer Engineering Laboratories",
+        "product": "SEL protection relay/RTU",
+        "revision": "4.31"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:30:A7"
+      ]
+    },
+    {
+      "id": "abb_rtu",
+      "category": "rtu",
+      "label": "ABB substation RTU",
+      "vendors": [
+        "^ABB",
+        "ABB "
+      ],
+      "host": "abb-rtu",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "iec104"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        2404
+      ],
+      "snmp": {
+        "descr": "ABB substation RTU, remote terminal unit",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "ABB",
+        "product": "ABB substation RTU",
+        "revision": "5.38"
+      },
+      "vendors_matched": 27,
+      "ouis": [
+        "60:39:1F",
+        "00:1B:45",
+        "00:13:DD",
+        "00:12:93",
+        "00:13:86",
+        "50:31:AD",
+        "54:F8:76",
+        "00:24:59"
+      ]
+    },
+    {
+      "id": "tridium_jace",
+      "category": "building_automation",
+      "label": "Tridium JACE controller",
+      "vendors": [
+        "Tridium"
+      ],
+      "host": "jace",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "fox",
+        "bacnet_whois",
+        "dns_checkin"
+      ],
+      "dhcp_class": "niagara",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [
+        "accounts.niagara-community.com"
+      ],
+      "ports": [
+        80,
+        443,
+        1911
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Building Controller",
+      "snmp": {
+        "descr": "Tridium JACE controller, building controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Tridium",
+        "product": "Tridium JACE controller",
+        "revision": "2.31"
+      },
+      "vendors_matched": 1,
+      "ouis": [
+        "00:01:F0"
+      ]
+    },
+    {
+      "id": "omron_plc",
+      "category": "plc",
+      "label": "Omron PLC",
+      "vendors": [
+        "OMRON",
+        "Omron"
+      ],
+      "host": "omron-nx",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "fins",
+        "modbus"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        502
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "Omron PLC, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Omron",
+        "product": "Omron PLC",
+        "revision": "3.38"
+      },
+      "modbus_id": {
+        "vendor": "Omron",
+        "product": "Omron PLC",
+        "revision": "3.38"
+      },
+      "vendors_matched": 5,
+      "ouis": [
+        "3C:F7:D1",
+        "80:B5:C6",
+        "B0:49:5F",
+        "00:22:09",
+        "00:00:0A"
+      ]
+    },
+    {
+      "id": "mitsubishi_plc",
+      "category": "plc",
+      "label": "Mitsubishi MELSEC PLC",
+      "vendors": [
+        "MITSUBISHI ELECTRIC",
+        "Mitsubishi Electric"
+      ],
+      "host": "melsec-q",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "melsec"
+      ],
+      "dhcp_class": "",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [],
+      "ports": [
+        80,
+        5007
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Controller",
+      "snmp": {
+        "descr": "Mitsubishi MELSEC PLC, programmable controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Mitsubishi Electric",
+        "product": "Mitsubishi MELSEC PLC",
+        "revision": "3.28"
+      },
+      "vendors_matched": 9,
+      "ouis": [
+        "38:E0:8E",
+        "00:0A:66",
+        "10:4B:46",
+        "58:52:8A",
+        "30:BE:3B",
+        "28:E9:8E",
+        "00:26:92",
+        "94:A4:B5"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+[Unit]
+Description=iotad -- IoT/OT traffic simulation daemon (lab asset-discovery enrichment)
+Documentation=file:/opt/iotad/README.md
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/opt/iotad/venv/bin/python /opt/iotad/iotad.py --config /etc/iotad.conf
+Restart=on-failure
+RestartSec=5
+# Raw AF_PACKET transmit needs the net-admin/raw capabilities, not full root.
+AmbientCapabilities=CAP_NET_RAW CAP_NET_ADMIN
+CapabilityBoundingSet=CAP_NET_RAW CAP_NET_ADMIN
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/run
+RuntimeDirectory=iotad
+
+[Install]
+WantedBy=multi-user.target
