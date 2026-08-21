@@ -8,7 +8,7 @@ import sys
 from scapy.all import ARP, BOOTP, DNS, Ether, IP, NTP, Raw, TCP, UDP, rdpcap
 
 
-REQUIRED_TCP_PORTS = {102, 502, 1883, 1911, 2404, 2575, 4840, 5007, 5094,
+REQUIRED_TCP_PORTS = {21, 22, 102, 445, 502, 1883, 1911, 2222, 2404, 2575, 4840, 5007, 5094,
                       7878, 11112, 20000}
 REQUIRED_UDP_PORTS = {53, 67, 123, 3671, 5353, 5683, 47808}
 
@@ -34,7 +34,9 @@ def main():
         if pkt.haslayer(TCP):
             tcp_ports[pkt[TCP].dport] += 1
             tcp_ports[pkt[TCP].sport] += 1
-            if pkt.haslayer(Raw) and bytes(pkt[Raw].load):
+            # Some well-known payloads (notably SMB2) are dissected into a
+            # protocol layer rather than left as Scapy Raw.
+            if bytes(pkt[TCP].payload):
                 payload_ports.add(pkt[TCP].dport)
                 payload_ports.add(pkt[TCP].sport)
         if pkt.haslayer(UDP):

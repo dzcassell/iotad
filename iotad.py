@@ -108,6 +108,18 @@ BEACON_INTERVAL = {
 }
 WAN_BEACONS = {"tls_checkin"}  # only run these when outbound scope includes WAN
 SUSPICIOUS_BEACON = "suspicious_beacon"
+BEHAVIOR_INDICATIONS = {
+    "long_dns": ["chaser_long_dns_queries"],
+    "nxdomain_dns": ["hunt_dns_response_code"],
+    "local_domain_dns": ["outbound_local_domain_dns_queries"],
+    "dyndns_dns": ["hunt_dyndns_traffic", "hunt_DynamicDNS_dns_traffic"],
+    "ftp_transfer": ["ftp_client_first_time_site_wan", "ftp_events_anomaly_site"],
+    "smb_transfer": ["lan_file_transfer_protocols_first_seen",
+                     "lan_file_transfer_protocols_activity"],
+    "ssh_low_popularity": ["suspicious_protocol_communication"],
+    "ssh_nonstandard": ["nonstandard_ports_first_seen_site",
+                        "hunt_abnormal_protocol_use"],
+}
 
 FACILITY_CATEGORIES = {
     "industrial": {"plc", "rtu", "hmi", "industrial_networking", "drive",
@@ -276,7 +288,10 @@ class Config:
         if self.suspicious_interval <= 0 or self.suspicious_max_pps <= 0:
             raise ValueError("suspicious.interval and suspicious.max_pps must be positive")
         supported_countries = {"china", "iran", "russia"}
-        supported_behaviors = {"geo_dns", "dga_dns", "dns_tunnel", "port_beacon"}
+        supported_behaviors = {
+            "geo_dns", "dga_dns", "dns_tunnel", "port_beacon",
+            *BEHAVIOR_INDICATIONS,
+        }
         if not self.suspicious_countries or not set(self.suspicious_countries) <= supported_countries:
             raise ValueError("suspicious.countries must contain china, iran, and/or russia")
         if not self.suspicious_behaviors or not set(self.suspicious_behaviors) <= supported_behaviors:
@@ -340,7 +355,9 @@ class Config:
             "suspicious": {
                 "enabled": "true", "device_fraction": "0.10", "interval": "300",
                 "max_pps": "2", "countries": "china, iran, russia",
-                "behaviors": "geo_dns, dga_dns, dns_tunnel, port_beacon",
+                "behaviors": ("geo_dns, dga_dns, dns_tunnel, port_beacon, long_dns, "
+                              "nxdomain_dns, local_domain_dns, dyndns_dns, ftp_transfer, "
+                              "smb_transfer, ssh_low_popularity, ssh_nonstandard"),
                 "china_targets": "223.5.5.5, 223.6.6.6",
                 "iran_targets": "178.22.122.100, 185.51.200.2",
                 "russia_targets": "77.88.8.8, 77.88.8.1",
@@ -547,6 +564,7 @@ class Emitters:
         self._suspicious_token_time = time.monotonic()
         self.suspicious_by_country = {}
         self.suspicious_by_behavior = {}
+        self.suspicious_by_indication = {}
         self.suspicious_rate_drops = 0
         for dev in roster:
             for host in dev.profile.get("checkin", []) or []:
@@ -659,6 +677,9 @@ class Emitters:
                 "selected_devices": getattr(self, "suspicious_device_count", 0),
                 "by_country": dict(self.suspicious_by_country),
                 "by_behavior": dict(self.suspicious_by_behavior),
+                "by_indication": dict(self.suspicious_by_indication),
+                "target_indications": sorted({i for values in BEHAVIOR_INDICATIONS.values()
+                                               for i in values}),
                 "rate_limited": self.suspicious_rate_drops,
             }
 
@@ -677,13 +698,29 @@ class Emitters:
         with self._suspicious_lock:
             self.suspicious_by_country[country] = self.suspicious_by_country.get(country, 0) + 1
             self.suspicious_by_behavior[behavior] = self.suspicious_by_behavior.get(behavior, 0) + 1
+            for indication in BEHAVIOR_INDICATIONS.get(behavior, []):
+                self.suspicious_by_indication[indication] = \
+                    self.suspicious_by_indication.get(indication, 0) + 1
         eth = Ether(src=dev.mac, dst=self._dst_mac_for(dev, target))
         ip = IP(src=dev.ip, dst=target)
         if behavior == "port_beacon":
             port = self.cfg.suspicious_ports[seq % len(self.cfg.suspicious_ports)]
             return eth / ip / TCP(sport=40000 + (dev.idx % 20000), dport=port,
                                   flags="S", seq=random.randint(1, 0xFFFFFFFF))
-        if behavior == "geo_dns":
+        if behavior in ("ftp_transfer", "smb_transfer", "ssh_low_popularity",
+                        "ssh_nonstandard"):
+            return self._suspicious_protocol_exchange(dev, behavior)
+        if behavior == "long_dns":
+            labels = [base64.b32encode(struct.pack("!III", dev.idx, seq, n)).decode()
+                      .rstrip("=").lower() for n in range(8)]
+            qname, qtype = ".".join(labels) + ".telemetry.invalid", "TXT"
+        elif behavior == "nxdomain_dns":
+            qname, qtype = f"missing-{dev.serial}-{seq}.invalid", "A"
+        elif behavior == "local_domain_dns":
+            qname, qtype = f"plc-{dev.serial}.operations.local", "A"
+        elif behavior == "dyndns_dns":
+            qname, qtype = f"iotad-{dev.serial}.duckdns.org", "A"
+        elif behavior == "geo_dns":
             qname, qtype = f"telemetry-{dev.serial}.iotad-lab.invalid", "A"
         elif behavior == "dga_dns":
             raw = struct.pack("!III", self.cfg.seed, dev.idx, seq)
@@ -696,6 +733,59 @@ class Emitters:
         return (eth / ip / UDP(sport=49152 + (dev.idx % 16000), dport=53) /
                 DNS(id=(dev.idx + seq) & 0xFFFF, rd=1,
                     qd=DNSQR(qname=qname, qtype=qtype)))
+
+    def _suspicious_protocol_exchange(self, dev, behavior):
+        """Complete cross-site application conversation for anomaly engines."""
+        remote = [d for d in self.roster if d.site is not dev.site and d.idx != dev.idx]
+        peers = remote or [d for d in self.roster if d.idx != dev.idx]
+        if not peers:
+            return None
+        peer = peers[(dev.idx + self._suspicious_seq) % len(peers)]
+        is_remote = peer.site is not dev.site
+        if is_remote and not self._wan_ok():
+            return None
+        if not is_remote and not self._sub_ok():
+            return None
+        definitions = {
+            "ftp_transfer": (21,
+                b"USER service\r\nPASS iotad-lab\r\nTYPE I\r\nSTOR diagnostics.bin\r\n",
+                b"220 iotad FTP ready\r\n331 Password required\r\n230 Login ok\r\n"
+                b"200 Type set to I\r\n150 Opening data connection\r\n226 Transfer complete\r\n"),
+            "smb_transfer": (445,
+                b"\x00\x00\x00\x44\xfeSMB\x40\x00\x00\x00" + b"\x00" * 56,
+                b"\x00\x00\x00\x44\xfeSMB\x40\x00\x00\x00" + b"\x01" * 56),
+            "ssh_low_popularity": (22,
+                b"SSH-2.0-PuTTY_Release_0.78\r\n",
+                b"SSH-2.0-OpenSSH_8.9p1 iotad-lab\r\n"),
+            "ssh_nonstandard": (2222,
+                b"SSH-2.0-PuTTY_Release_0.78\r\n",
+                b"SSH-2.0-OpenSSH_8.9p1 iotad-lab\r\n"),
+        }
+        port, request, response = definitions[behavior]
+        c_dst = (peer.site.gw_mac if is_remote else peer.mac) or BCAST_MAC
+        s_dst = (dev.site.gw_mac if is_remote else dev.mac) or BCAST_MAC
+        sport = random.randint(20000, 60000)
+        cseq, sseq = random.randint(1, 0x7FFFFFFF), random.randint(1, 0x7FFFFFFF)
+
+        def frame(src, dst, sip, dip, sp, dp, flags, seqno, ackno, payload, iface):
+            pkt = (Ether(src=src, dst=dst) / IP(src=sip, dst=dip) /
+                   TCP(sport=sp, dport=dp, flags=flags, seq=seqno, ack=ackno))
+            return WireFrame(pkt / Raw(payload) if payload else pkt, iface)
+
+        return [
+            frame(dev.mac, c_dst, dev.ip, peer.ip, sport, port, "S", cseq, 0, b"",
+                  dev.site.interface),
+            frame(peer.mac, s_dst, peer.ip, dev.ip, port, sport, "SA", sseq, cseq + 1, b"",
+                  peer.site.interface),
+            frame(dev.mac, c_dst, dev.ip, peer.ip, sport, port, "PA", cseq + 1, sseq + 1,
+                  request, dev.site.interface),
+            frame(peer.mac, s_dst, peer.ip, dev.ip, port, sport, "PA", sseq + 1,
+                  cseq + 1 + len(request), response, peer.site.interface),
+            frame(peer.mac, s_dst, peer.ip, dev.ip, port, sport, "FA",
+                  sseq + 1 + len(response), cseq + 1 + len(request), b"", peer.site.interface),
+            frame(dev.mac, c_dst, dev.ip, peer.ip, sport, port, "A", cseq + 1 + len(request),
+                  sseq + 2 + len(response), b"", dev.site.interface),
+        ]
 
     # -- discovery beacons --
     def garp(self, dev):
