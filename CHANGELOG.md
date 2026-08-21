@@ -7,6 +7,21 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Default-on, independently rate-limited suspicious-traffic simulation with
+  country-targeted public DNS contact, DGA-like lookups, DNS tunnel-shaped TXT
+  queries, and low-rate odd-port TCP SYN beacons.
+- Huawei industrial IoT gateway profile with authentic IEEE OUI selection and
+  a China target preference for suspicious traffic.
+- Suspicious-device, country, behavior, and rate-limit counters in runtime
+  metrics.
+
+### Changed
+
+- Large mixed-facility rosters now include every catalog archetype at least
+  once, guaranteeing broad protocol coverage while remaining deterministic.
+
 ### Planned
 
 - Automated validation from an external probe host on each lab segment.

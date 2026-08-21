@@ -13,6 +13,8 @@ class ConfigTests(unittest.TestCase):
     def test_defaults_validate(self):
         cfg = iotad.Config(None)
         self.assertEqual(cfg.facility, "mixed")
+        self.assertTrue(cfg.suspicious_enabled)
+        self.assertEqual(set(cfg.suspicious_countries), {"china", "iran", "russia"})
 
     def test_rejects_pool_outside_subnet(self):
         text = """
@@ -134,6 +136,24 @@ class ProtocolTests(unittest.TestCase):
         events = [self.em.scenario_event(self.client) for _ in range(6)]
         self.assertTrue(all(event is not None for event in events))
 
+    def test_suspicious_dns_and_port_beacons_are_bounded_targets(self):
+        old_behaviors = self.cfg.suspicious_behaviors
+        try:
+            self.cfg.suspicious_behaviors = ["geo_dns"]
+            self.em._suspicious_seq = 0
+            dns = self.em.suspicious_beacon(self.client)
+            targets = {ip for values in self.cfg.suspicious_targets.values() for ip in values}
+            self.assertIn(dns[iotad.IP].dst, targets)
+            self.assertEqual(dns[iotad.UDP].dport, 53)
+            self.assertTrue(bytes(dns[iotad.DNSQR].qname).endswith(b".invalid."))
+
+            self.cfg.suspicious_behaviors = ["port_beacon"]
+            syn = self.em.suspicious_beacon(self.client)
+            self.assertEqual(syn[iotad.TCP].flags, "S")
+            self.assertIn(syn[iotad.TCP].dport, self.cfg.suspicious_ports)
+        finally:
+            self.cfg.suspicious_behaviors = old_behaviors
+
     def test_vlan_tagging_in_pcap(self):
         old_vlan = self.site_a.vlan
         old_path = getattr(self.cfg, "pcap_path", None)
@@ -170,6 +190,7 @@ class CatalogTests(unittest.TestCase):
         self.assertTrue(all("ntp" in p["beacons"] for p in profiles))
         beacons = {b for p in profiles for b in p["beacons"]}
         self.assertTrue({"mqtt", "coap", "knx", "iec61850", "mtconnect"} <= beacons)
+        self.assertTrue(any(p["id"] == "huawei_iot_gateway" for p in profiles))
 
     def test_weighted_facility_roster_is_scoped_and_deterministic(self):
         with open(os.path.join(HERE, "catalog.json")) as f:
@@ -183,6 +204,15 @@ class CatalogTests(unittest.TestCase):
         self.assertTrue(all(d.profile["category"] in allowed for d in first))
         self.assertEqual([(d.ip, d.mac, d.profile["id"]) for d in first],
                          [(d.ip, d.mac, d.profile["id"]) for d in second])
+
+    def test_large_mixed_roster_covers_every_profile(self):
+        with open(os.path.join(HERE, "catalog.json")) as f:
+            catalog = json.load(f)
+        cfg = iotad.Config(None)
+        cfg.device_count = len(catalog["profiles"])
+        roster = iotad.build_roster(catalog, cfg)
+        self.assertEqual({d.profile["id"] for d in roster},
+                         {p["id"] for p in catalog["profiles"]})
 
 
 if __name__ == "__main__":
