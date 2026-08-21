@@ -36,6 +36,11 @@ class EndpointTests(unittest.TestCase):
     def test_malformed_dns_is_ignored(self):
         self.assertEqual(endpoint.dns_response(b"short"), b"")
 
+    def test_public_rpf_address_is_documented_in_compose(self):
+        with open(os.path.join(ROOT, "endpoint", "compose.yaml"), encoding="utf-8") as f:
+            compose = f.read()
+        self.assertIn("149.20.200.136", compose)
+
 
 if __name__ == "__main__":
     unittest.main()

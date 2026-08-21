@@ -3,6 +3,7 @@ name: iotad-endpoint
 services:
   endpoint:
     build: .
+    image: iotad-rpf-endpoint:latest
     container_name: iotad-rpf-endpoint
     restart: unless-stopped
     read_only: true
@@ -21,6 +22,24 @@ services:
       plant_lan:
         ipv4_address: 192.168.7.20
         mac_address: "02:49:4f:54:41:20"
+
+  campaign:
+    image: iotad-rpf-endpoint:latest
+    container_name: iotad-rpf-campaign
+    restart: unless-stopped
+    network_mode: host
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      disable: true
+    entrypoint: ["python", "/app/probe.py"]
+    command: ["--watch", "--interval", "900", "149.20.200.136"]
+    depends_on:
+      endpoint:
+        condition: service_healthy
 
 networks:
   plant_lan:
