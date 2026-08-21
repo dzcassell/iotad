@@ -1,5 +1,7 @@
 # iotad — IoT/OT traffic simulation daemon
 
+See [CHANGELOG.md](CHANGELOG.md) for the public change history.
+
 Populates a lab network with believable IoT/OT assets so network
 asset-discovery (built for **Cato Networks** demo/lab enrichment) has something
 rich to find. It runs a deterministic roster of virtual devices — each with a
