@@ -38,6 +38,9 @@ L2/L3 traffic those devices would emit.
 | Process utilities | RO/DI skids, process instruments, VFDs | Modbus, OPC UA, HART-IP, EtherNet/IP |
 | Manufacturing | ABB robot controllers, Rockwell safety controllers | PROFINET, OPC UA, CIP Safety |
 | Medical / clinical | Philips monitors, GE imaging workstations | DICOM, HL7 MLLP, DNS/TLS |
+| Smart facilities | KNX/IP gateways, MQTT/Sparkplug gateways, CoAP sensors | KNXnet/IP, MQTT, Sparkplug B, CoAP |
+| Manufacturing gateways | MTConnect cell gateways | HTTP/XML MTConnect, MQTT |
+| Electrical substations | ABB RTUs and protection relays | IEC 61850 MMS, IEC-104, DNP3 |
 
 Each device also carries a realistic **DHCP fingerprint** (option 60 vendor
 class + option 55 parameter list) and hostname, which is what most discovery
@@ -80,6 +83,9 @@ than SYN-only probes for Modbus, S7, OPC UA, DNP3, IEC-104, Niagara Fox,
 MELSEC, HART-IP, CIP Safety, DICOM, and HL7. This gives flow and application
 identification engines request/response payloads to classify.
 
+Additional modern telemetry includes MQTT with Sparkplug-style topics, CoAP
+sensor reads, KNXnet/IP discovery, IEC 61850 MMS initiation, and MTConnect XML.
+
 > A **confirmed** device also passes the Socket's uRPF/anti-spoof filter, so its
 > flows route to the WAN — which is what makes true site-to-site OT traffic
 > possible (below).
@@ -107,7 +113,7 @@ single-site behavior is unchanged.
 /opt/iotad/
   iotad.py          the daemon
   build_catalog.py  filters the IEEE registry -> catalog.json
-  catalog.json      generated: 53 profiles, ~262 authentic OUIs
+  catalog.json      generated: 65 profiles, 340 authentic OUIs
   oui.csv           IEEE OUI registry (refreshable)
   iotad.conf        sample config (installed to /etc/iotad.conf)
   iotad.service     systemd unit
@@ -129,15 +135,22 @@ Edit `/etc/iotad.conf`. The important knobs:
 - `seed` — same seed ⇒ identical roster across restarts, so the Cato inventory
   stays stable. Change it to reshuffle vendors/MACs/IPs.
 - `facility` — population preset: `mixed`, `industrial`, `manufacturing`,
-  `cleanroom`, `medical`, `water`, or `building`.
+  `cleanroom`, `medical`, `water`, `building`, `pharma_cleanroom`, `hospital`,
+  `automotive`, or `water_treatment`. Named facility presets use weighted
+  populations so the roster resembles the selected environment.
 - `scenario` — cadence preset: `baseline`, `commissioning`, `production`,
   `maintenance`, or `incident`; `max_pps` remains the hard safety ceiling.
+- `events_enabled` — enables low-rate shift, maintenance, alarm,
+  environmental-excursion, firmware, and failure events.
 - `categories` — blank for the full mix, or a comma-separated subset.
   Explicit categories override the facility preset.
 - `[outbound] scope` — `subnet` (LAN + broadcast only), `wan` (also reach the
   internet), or `both`. WAN frames use spoofed source IPs and may be dropped by
   BCP38/uRPF upstream — expected and harmless for discovery.
 - `max_pps` — global frames/second ceiling (default 50).
+- Per-site `zone` labels appear in metrics. Per-site `vlan` can be `0` for
+  untagged traffic or `1..4094` to insert an 802.1Q tag. Sites sharing one
+  interface must use the same VLAN.
 
 ## Run
 
@@ -165,6 +178,29 @@ Run the regression suite:
 cd /opt/iotad
 venv/bin/python -m unittest discover -s tests -v
 ```
+
+Validate a generated capture with Scapy and Wireshark dissectors:
+
+```sh
+venv/bin/python iotad.py --config /etc/iotad.conf --once --pcap /tmp/iotad.pcap
+venv/bin/python scripts/validate_pcap.py /tmp/iotad.pcap
+tshark -r /tmp/iotad.pcap -q -z io,phs
+```
+
+## Metrics and health
+
+The daemon atomically refreshes `/run/iotad/metrics.json` by default. The JSON
+contains uptime, facility/scenario selection, site/zone/VLAN metadata, device
+counts, transmitter totals, rate-limit waits, send failures, and responder
+counters. `metrics_file` and `metrics_interval` are configurable under
+`[runtime]`.
+
+## Continuous integration
+
+GitHub Actions compiles the code, runs the regression suite, verifies that
+`catalog.json` exactly matches `build_catalog.py` plus `oui.csv`, generates and
+validates a PCAP, runs tshark protocol analysis, and scans tracked files for
+common credential formats.
 
 Verify it on the wire from another host or the same box:
 

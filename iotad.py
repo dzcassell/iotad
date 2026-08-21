@@ -22,6 +22,7 @@ and are authorized to test. See README.md.
 import argparse
 import configparser
 import ipaddress
+import json
 import logging
 import os
 import random
@@ -33,6 +34,7 @@ import sys
 import threading
 import time
 import uuid
+import zlib
 from heapq import heappush, heappop
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -43,8 +45,8 @@ logging.getLogger("scapy").setLevel(logging.ERROR)
 try:
     from scapy.all import (
         Ether, ARP, IP, ICMP, UDP, TCP, BOOTP, DHCP, DNS, DNSQR, DNSRR, DNSRRSRV,
-        NTP, LLC, SNAP, Raw, conf, checksum, AsyncSniffer, srp1,
-        get_if_addr, get_if_hwaddr, PcapWriter,
+        NTP, LLC, SNAP, Raw, Dot1Q, conf, checksum, AsyncSniffer, srp1,
+        get_if_addr, get_if_hwaddr, PcapWriter, rdpcap,
     )
 except Exception as e:  # pragma: no cover
     sys.exit(f"iotad: scapy import failed ({e}); install into the venv:\n"
@@ -92,6 +94,12 @@ BEACON_INTERVAL = {
     "cip_safety": ("poll_interval", 90),
     "dicom": ("poll_interval", 90),
     "hl7": ("poll_interval", 90),
+    "mqtt": ("poll_interval", 90),
+    "coap": ("poll_interval", 90),
+    "knx": ("discovery_interval", 120),
+    "iec61850": ("poll_interval", 90),
+    "mtconnect": ("poll_interval", 90),
+    "scenario_event": ("event_interval", 600),
     "fins": ("discovery_interval", 120),
     "ntp": ("ntp_interval", 900),
     "dns_checkin": ("checkin", 0),
@@ -113,6 +121,25 @@ FACILITY_CATEGORIES = {
     "building": {"hvac", "building_automation", "lighting", "access_control",
                  "intercom", "power", "environmental", "networking"},
 }
+FACILITY_WEIGHTS = {
+    "pharma_cleanroom": {"cleanroom": 12, "environmental": 8, "hvac": 7,
+                          "building_automation": 6, "instrumentation": 5,
+                          "water_treatment": 4, "plc": 3, "drive": 2,
+                          "power": 2, "access_control": 2, "networking": 1},
+    "hospital": {"medical": 12, "building_automation": 5, "hvac": 5,
+                 "environmental": 4, "power": 3, "access_control": 3,
+                 "printer": 3, "voip": 3, "networking": 2},
+    "automotive": {"robotics": 10, "plc": 9, "safety": 7, "drive": 6,
+                   "hmi": 4, "industrial_networking": 4,
+                   "instrumentation": 3, "printer": 1, "power": 1},
+    "water_treatment": {"water_treatment": 10, "instrumentation": 8,
+                        "plc": 6, "drive": 6, "rtu": 4,
+                        "environmental": 3, "power": 2,
+                        "industrial_networking": 2},
+}
+# Preserve the original concise preset names as weighted aliases.
+for _name, _cats in list(FACILITY_CATEGORIES.items()):
+    FACILITY_WEIGHTS[_name] = {category: 1 for category in _cats}
 SCENARIO_CADENCE = {
     "baseline": 1.0,
     "commissioning": 0.45,
@@ -128,13 +155,16 @@ class Site:
     Socket. Devices belong to a site; cross-site flows route via the site's
     gateway (Socket) so they traverse the WAN."""
 
-    def __init__(self, name, interface, subnet, gateway, ip_start, ip_end):
+    def __init__(self, name, interface, subnet, gateway, ip_start, ip_end,
+                 vlan=0, zone=None):
         self.name = name
         self.interface = interface
         self.subnet = ipaddress.ip_network(subnet, strict=False)
         self.gateway = gateway
         self.ip_start = ipaddress.ip_address(ip_start)
         self.ip_end = ipaddress.ip_address(ip_end)
+        self.vlan = int(vlan or 0)
+        self.zone = zone or name
         self.gw_mac = None                 # resolved at runtime
         self.dns_server = None
         self.mac_cache = {}
@@ -163,12 +193,14 @@ class Config:
                 s = cp[sec]
                 self.sites.append(Site(
                     sec.split(":", 1)[1], s.get("interface"), s.get("subnet"),
-                    s.get("gateway"), s.get("ip_pool_start"), s.get("ip_pool_end")))
+                    s.get("gateway"), s.get("ip_pool_start"), s.get("ip_pool_end"),
+                    s.getint("vlan", fallback=0), s.get("zone", fallback=None)))
         else:
             n = cp["network"]
             self.sites.append(Site(
                 "site1", n.get("interface"), n.get("subnet"), n.get("gateway"),
-                n.get("ip_pool_start"), n.get("ip_pool_end")))
+                n.get("ip_pool_start"), n.get("ip_pool_end"),
+                n.getint("vlan", fallback=0), n.get("zone", fallback="site1")))
         # First site's interface is the default for anything single-homed.
         self.interface = self.sites[0].interface
 
@@ -177,6 +209,7 @@ class Config:
         self.seed = s.getint("seed")
         self.facility = s.get("facility", "mixed").strip().lower()
         self.scenario = s.get("scenario", "baseline").strip().lower()
+        self.events_enabled = s.getboolean("events_enabled", fallback=True)
         cats = s.get("categories", "").strip()
         self.categories = [c.strip() for c in cats.split(",") if c.strip()]
         # Fraction of OT polls aimed at a peer on ANOTHER site (WAN traffic).
@@ -197,13 +230,15 @@ class Config:
         self.logfile = r.get("logfile")
         self.dry_run = r.getboolean("dry_run")
         self.rate_limit = r.getint("max_pps")
+        self.metrics_file = r.get("metrics_file", "/run/iotad/metrics.json")
+        self.metrics_interval = r.getint("metrics_interval", fallback=30)
         self._validate()
 
     def _validate(self):
         if self.device_count <= 0:
             raise ValueError("simulation.device_count must be greater than zero")
-        if self.facility != "mixed" and self.facility not in FACILITY_CATEGORIES:
-            choices = ", ".join(["mixed"] + sorted(FACILITY_CATEGORIES))
+        if self.facility != "mixed" and self.facility not in FACILITY_WEIGHTS:
+            choices = ", ".join(["mixed"] + sorted(FACILITY_WEIGHTS))
             raise ValueError(f"simulation.facility must be one of: {choices}")
         if self.scenario not in SCENARIO_CADENCE:
             raise ValueError("simulation.scenario must be one of: " +
@@ -228,6 +263,8 @@ class Config:
                 raise ValueError(f"site '{site.name}' IP pool must be inside {site.subnet}")
             if gateway not in site.subnet:
                 raise ValueError(f"site '{site.name}' gateway must be inside {site.subnet}")
+            if site.vlan not in range(0, 4095):
+                raise ValueError(f"site '{site.name}' vlan must be 0 or 1..4094")
             if site.ip_start in (site.subnet.network_address, site.subnet.broadcast_address) or \
                     site.ip_end in (site.subnet.network_address, site.subnet.broadcast_address):
                 raise ValueError(f"site '{site.name}' IP pool cannot include network/broadcast addresses")
@@ -235,6 +272,8 @@ class Config:
         hi = self.timing.getint("checkin_max")
         if lo <= 0 or hi < lo:
             raise ValueError("timing checkin_min/checkin_max range is invalid")
+        if self.metrics_interval <= 0:
+            raise ValueError("runtime.metrics_interval must be greater than zero")
 
     @staticmethod
     def defaults():
@@ -252,6 +291,7 @@ class Config:
                 "discovery_interval": "120", "poll_interval": "90",
                 "ntp_interval": "900",
                 "checkin_min": "180", "checkin_max": "900",
+                "event_interval": "600",
             },
             "outbound": {
                 "enabled": "true", "scope": "both",
@@ -260,6 +300,7 @@ class Config:
             "runtime": {
                 "pidfile": "/run/iotad.pid", "logfile": "",
                 "dry_run": "false", "max_pps": "50",
+                "metrics_file": "/run/iotad/metrics.json", "metrics_interval": "30",
             },
         }
 
@@ -297,7 +338,7 @@ def build_roster(catalog, cfg):
     if cfg.categories:
         profiles = [p for p in profiles if p["category"] in cfg.categories]
     elif cfg.facility != "mixed":
-        allowed = FACILITY_CATEGORIES[cfg.facility]
+        allowed = set(FACILITY_WEIGHTS[cfg.facility])
         profiles = [p for p in profiles if p["category"] in allowed]
     if not profiles:
         sys.exit("iotad: no catalog profiles match the configured categories")
@@ -324,7 +365,12 @@ def build_roster(catalog, cfg):
         for si, site in enumerate(cfg.sites):
             if slot >= counts[si]:
                 continue
-            p = rng.choice(profiles)
+            if cfg.categories or cfg.facility == "mixed":
+                p = rng.choice(profiles)
+            else:
+                weights = [FACILITY_WEIGHTS[cfg.facility][p["category"]]
+                           for p in profiles]
+                p = rng.choices(profiles, weights=weights, k=1)[0]
             oui = rng.choice(p["ouis"])
             nic = "%02x:%02x:%02x" % (rng.randint(0, 255), rng.randint(0, 255),
                                       rng.randint(0, 255))
@@ -353,6 +399,14 @@ class Tx:
         self._token_time = time.monotonic()
         self._pcap = PcapWriter(cfg.pcap_path, append=False, sync=True) \
             if getattr(cfg, "pcap_path", None) else None
+        self.failures = 0
+        self.throttle_waits = 0
+        self._vlan_by_iface = {}
+        for site in cfg.sites:
+            prior = self._vlan_by_iface.get(site.interface, site.vlan)
+            if prior != site.vlan:
+                raise ValueError("sites sharing an interface must use the same VLAN")
+            self._vlan_by_iface[site.interface] = site.vlan
         if not cfg.dry_run:
             conf.iface = cfg.interface
             conf.verb = 0
@@ -361,8 +415,15 @@ class Tx:
                     self._socks[site.interface] = conf.L2socket(iface=site.interface)
 
     def send(self, beacon, pkt, iface=None):
-        self.by_beacon[beacon] = self.by_beacon.get(beacon, 0) + 1
-        self.sent += 1
+        with self._rate_lock:
+            self.by_beacon[beacon] = self.by_beacon.get(beacon, 0) + 1
+            self.sent += 1
+        iface = iface or self.cfg.interface
+        vlan = self._vlan_by_iface.get(iface, 0)
+        if vlan and pkt.haslayer(Ether) and not pkt.haslayer(Dot1Q):
+            eth = pkt[Ether]
+            pkt = (Ether(src=eth.src, dst=eth.dst, type=0x8100) /
+                   Dot1Q(vlan=vlan, type=eth.type) / eth.payload)
         if self.cfg.dry_run:
             if self._pcap:
                 with self._rate_lock:
@@ -381,12 +442,20 @@ class Tx:
                     self._tokens -= 1.0
                     break
                 wait = (1.0 - self._tokens) / self.cfg.rate_limit
+                self.throttle_waits += 1
             time.sleep(min(wait, 0.05))
         sock = self._socks.get(iface) or self._socks.get(self.cfg.interface)
         try:
             sock.send(pkt)
         except Exception as e:
+            self.failures += 1
             log.warning("send failed (%s): %s", beacon, e)
+
+    def snapshot(self):
+        with self._rate_lock:
+            return {"sent": self.sent, "by_beacon": dict(self.by_beacon),
+                    "send_failures": self.failures,
+                    "throttle_waits": self.throttle_waits}
 
     def close(self):
         for s in self._socks.values():
@@ -408,9 +477,16 @@ class Emitters:
         # index devices by (site, listening-port) for cross-site peer targeting
         self.listeners = {}
         for d in roster:
-            for port in d.profile.get("ports", []):
+            for port in set(d.profile.get("ports", [])) | set(d.profile.get("udp_ports", [])):
                 self.listeners.setdefault(port, []).append(d)
         self.ntp_ip = None
+        self.host_ips = {}
+        self._event_seq = 0
+        for dev in roster:
+            for host in dev.profile.get("checkin", []) or []:
+                # Deterministic TEST-NET-3 destination: SNI/DNS stays realistic,
+                # but the simulator never contacts a real vendor service.
+                self.host_ips[host] = "203.0.113.%d" % (1 + zlib.crc32(host.encode()) % 253)
         self._resolve_infra()
 
     # -- infrastructure resolution --
@@ -695,6 +771,25 @@ class Emitters:
             c("A", cseq + 1 + len(request), sseq + 2 + len(response)),
         ]
 
+    def _udp_exchange(self, dev, port, request, response):
+        peer = self._pick_peer(dev, port)
+        if not peer:
+            return None
+        remote = peer.site is not dev.site
+        if remote and not self._wan_ok():
+            return None
+        if not remote and not self._sub_ok():
+            return None
+        c_dst = (peer.site.gw_mac if remote else peer.mac) or BCAST_MAC
+        s_dst = (dev.site.gw_mac if remote else dev.mac) or BCAST_MAC
+        sport = random.randint(20000, 60000)
+        req = (Ether(src=dev.mac, dst=c_dst) / IP(src=dev.ip, dst=peer.ip) /
+               UDP(sport=sport, dport=port) / Raw(request))
+        resp = (Ether(src=peer.mac, dst=s_dst) / IP(src=peer.ip, dst=dev.ip) /
+                UDP(sport=port, dport=sport) / Raw(response))
+        return [WireFrame(req, dev.site.interface),
+                WireFrame(resp, peer.site.interface)]
+
     def modbus(self, dev):
         tid = random.randint(0, 0xFFFF)
         req = struct.pack(">HHHBBHH", tid, 0, 6, 1, 3, 0, 4)
@@ -763,6 +858,70 @@ class Emitters:
                b"MSA|AA|1\r\x1c\r")
         return self._tcp_exchange(dev, 2575, msg, ack)
 
+    @staticmethod
+    def _mqtt_string(value):
+        value = value.encode() if isinstance(value, str) else value
+        return struct.pack(">H", len(value)) + value
+
+    def mqtt(self, dev):
+        client_id = self._mqtt_string(dev.hostname)
+        variable = self._mqtt_string("MQTT") + b"\x04\x02\x00\x3c"
+        connect_body = variable + client_id
+        connect = b"\x10" + bytes([len(connect_body)]) + connect_body
+        topic = "spBv1.0/iotad/DDATA/%s" % dev.hostname
+        payload = self._mqtt_string(topic) + b"metrics=temperature:21.4,status:online"
+        publish = b"\x30" + bytes([len(payload)]) + payload
+        return self._tcp_exchange(dev, 1883, connect + publish, b"\x20\x02\x00\x00")
+
+    def coap(self, dev):
+        token = dev.mac_bytes[-2:]
+        request = b"\x42\x01" + struct.pack(">H", random.randint(1, 65535)) + token + \
+                  b"\xb7sensors\x0btemperature"
+        response = b"\x62\x45" + request[2:6] + b"\xc1\x00\xff21.4 C"
+        return self._udp_exchange(dev, 5683, request, response)
+
+    def knx(self, dev):
+        request = bytes.fromhex("06100201000e0801") + b"\x00" * 6
+        response = bytes.fromhex("0610020200360801") + b"\x00" * 40
+        return self._udp_exchange(dev, 3671, request, response)
+
+    def iec61850(self, dev):
+        # TPKT/COTP Data TPDU followed by compact MMS initiate request/response.
+        request = bytes.fromhex("0300001602f080a80f80020780810100820100830100")
+        response = bytes.fromhex("0300001602f080a90f80020780810100820100830100")
+        return self._tcp_exchange(dev, 102, request, response)
+
+    def mtconnect(self, dev):
+        request = (b"GET /current HTTP/1.1\r\nHost: mtconnect.local:7878\r\n"
+                   b"Accept: application/xml\r\nConnection: close\r\n\r\n")
+        body = (b"<?xml version=\"1.0\"?><MTConnectStreams><DeviceStream name=\"cell\">"
+                b"<Events><Execution dataItemId=\"exec\">ACTIVE</Execution>"
+                b"</Events></DeviceStream></MTConnectStreams>")
+        response = (b"HTTP/1.1 200 OK\r\nContent-Type: application/xml\r\nContent-Length: " +
+                    str(len(body)).encode() + b"\r\nConnection: close\r\n\r\n" + body)
+        return self._tcp_exchange(dev, 7878, request, response)
+
+    def scenario_event(self, dev):
+        """Emit a controlled operational event; the global limiter remains final."""
+        event = ("shift_change", "maintenance", "alarm", "environmental_excursion",
+                 "firmware_update", "device_failure")[self._event_seq % 6]
+        self._event_seq += 1
+        if event == "shift_change":
+            return self.dhcp(dev)
+        if event in ("maintenance", "firmware_update"):
+            path = b"/maintenance/diagnostics" if event == "maintenance" else b"/firmware/check"
+            request = b"GET " + path + b" HTTP/1.1\r\nHost: device.local\r\n\r\n"
+            response = (b"HTTP/1.1 200 OK\r\nContent-Type: application/json\r\n"
+                        b"Content-Length: 15\r\n\r\n{\"status\":\"ok\"}")
+            return self._tcp_exchange(dev, 80, request, response)
+        severity = {"alarm": 3, "environmental_excursion": 4, "device_failure": 2}[event]
+        message = (f"<1{severity}4>1 {time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())} "
+                   f"{dev.hostname} iotad - - [event@32473 type=\"{event}\" "
+                   f"category=\"{dev.profile['category']}\"] simulated lab event").encode()
+        return (Ether(src=dev.mac, dst=dev.site.gw_mac or BCAST_MAC) /
+                IP(src=dev.ip, dst=dev.site.gateway) /
+                UDP(sport=514, dport=514) / Raw(message))
+
     # -- outbound check-ins (routed via the device's own Socket) --
     def dns_checkin(self, dev):
         if not self._sub_ok():
@@ -792,10 +951,7 @@ class Emitters:
         if not hosts:
             return None
         host = random.choice(hosts)
-        try:
-            dst = socket.gethostbyname(host)
-        except Exception:
-            return None
+        dst = self.host_ips[host]
         sport = random.randint(1024, 65535)
         seq = random.randint(0, 0x7FFFFFFF)
         ether = Ether(src=dev.mac, dst=dev.site.gw_mac or BCAST_MAC)
@@ -1491,6 +1647,89 @@ class Responder:
                  self.modbus_replies, self.enip_replies, self.ws_replies,
                   self.mdns_replies, self.bacnet_replies, self.profinet_replies)
 
+    def snapshot(self):
+        return {
+            "interface": self.iface,
+            "devices": len(self.by_ip),
+            "arp": self.arp_replies,
+            "icmp": self.icmp_replies,
+            "tcp_open": self.tcp_opens,
+            "http": self.tcp_banners,
+            "snmp": self.snmp_replies,
+            "modbus": self.modbus_replies,
+            "ethernet_ip": self.enip_replies,
+            "ws_discovery": self.ws_replies,
+            "mdns": self.mdns_replies,
+            "bacnet": self.bacnet_replies,
+            "profinet": self.profinet_replies,
+            "tcp_state_entries": len(self.conns),
+        }
+
+
+class MetricsReporter:
+    """Periodically writes an atomic JSON health/traffic snapshot."""
+
+    def __init__(self, cfg, roster, tx, responders):
+        self.cfg, self.roster, self.tx, self.responders = cfg, roster, tx, responders
+        self.started = time.time()
+        self._stop = threading.Event()
+        self._thread = None
+
+    def snapshot(self):
+        by_category, by_site = {}, {}
+        for dev in self.roster:
+            by_category[dev.profile["category"]] = by_category.get(dev.profile["category"], 0) + 1
+            by_site[dev.site.name] = by_site.get(dev.site.name, 0) + 1
+        return {
+            "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "uptime_seconds": int(time.time() - self.started),
+            "facility": self.cfg.facility,
+            "scenario": self.cfg.scenario,
+            "devices": len(self.roster),
+            "devices_by_category": by_category,
+            "devices_by_site": by_site,
+            "sites": [{"name": s.name, "interface": s.interface,
+                       "zone": s.zone, "vlan": s.vlan, "subnet": str(s.subnet)}
+                      for s in self.cfg.sites],
+            "transmitter": self.tx.snapshot(),
+            "responders": [r.snapshot() for r in self.responders],
+        }
+
+    def _write(self):
+        if not self.cfg.metrics_file:
+            return
+        directory = os.path.dirname(self.cfg.metrics_file) or "."
+        os.makedirs(directory, exist_ok=True)
+        tmp = self.cfg.metrics_file + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(self.snapshot(), f, indent=2, sort_keys=True)
+            f.write("\n")
+        os.replace(tmp, self.cfg.metrics_file)
+
+    def _run(self):
+        while not self._stop.wait(self.cfg.metrics_interval):
+            try:
+                self._write()
+            except OSError as e:
+                log.warning("metrics: %s", e)
+
+    def start(self):
+        if not self.cfg.dry_run and self.cfg.metrics_file:
+            self._write()
+            self._thread = threading.Thread(target=self._run, daemon=True,
+                                            name="iotad-metrics")
+            self._thread.start()
+
+    def stop(self):
+        self._stop.set()
+        if self._thread:
+            self._thread.join(timeout=2)
+        if not self.cfg.dry_run and self.cfg.metrics_file:
+            try:
+                self._write()
+            except OSError as e:
+                log.warning("metrics: %s", e)
+
 
 # ---- scheduler -------------------------------------------------------------
 class Scheduler:
@@ -1536,6 +1775,10 @@ class Scheduler:
                     continue
                 offset = random.uniform(0, 5 if not spread else min(30, self._interval(beacon)))
                 self._schedule(now + offset, dev, beacon)
+        if self.cfg.events_enabled:
+            stride = max(1, len(self.roster) // 20)
+            for dev in self.roster[::stride]:
+                self._schedule(now + random.uniform(5, 30), dev, "scenario_event")
 
     def emit(self, dev, beacon):
         fn = getattr(self.em, beacon, None)
@@ -1561,6 +1804,10 @@ class Scheduler:
                 if beacon in WAN_BEACONS and not self.em._wan_ok():
                     continue
                 self.emit(dev, beacon)
+        if self.cfg.events_enabled:
+            stride = max(1, len(self.roster) // 20)
+            for dev in self.roster[::stride]:
+                self.emit(dev, "scenario_event")
 
     def run(self):
         now = time.monotonic()
@@ -1705,9 +1952,12 @@ def main():
 
     for r in responders:
         r.start()
+    metrics = MetricsReporter(cfg, roster, tx, responders)
+    metrics.start()
     try:
         sched.run()
     finally:
+        metrics.stop()
         for r in responders:
             r.stop()
         tx.close()

@@ -28,6 +28,7 @@
         "fw.axis.com",
         "dispatch.axis.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -81,6 +82,7 @@
         "litedev.hik-connect.com",
         "www.hikvisioneurope.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -138,6 +140,7 @@
         "www.easy4ip.com",
         "p2p.dahuasecurity.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -191,6 +194,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -239,6 +243,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -286,6 +291,7 @@
       "checkin": [
         "mercury.hidglobal.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -325,6 +331,7 @@
       "checkin": [
         "updates.johnsoncontrols.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -368,6 +375,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -418,6 +426,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -463,6 +472,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         102
@@ -516,6 +526,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         44818
@@ -570,6 +581,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -622,6 +634,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -666,6 +679,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -711,6 +725,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -757,6 +772,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -798,6 +814,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -850,6 +867,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -900,6 +918,7 @@
       "checkin": [
         "fw-update.ubnt.com"
       ],
+      "udp_ports": [],
       "ports": [
         22,
         80,
@@ -949,6 +968,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         22,
         80,
@@ -1001,6 +1021,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1064,6 +1085,7 @@
         "chat.hpeprint.com",
         "h20180.www2.hp.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1118,6 +1140,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1178,6 +1201,7 @@
         "epsonconnect.com",
         "pool.epsonconnect.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1233,6 +1257,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1286,6 +1311,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1339,6 +1365,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1390,6 +1417,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1441,6 +1469,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Printer:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         631,
@@ -1487,6 +1516,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1523,6 +1553,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1562,6 +1593,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1603,6 +1635,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -1641,6 +1674,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1684,6 +1718,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1721,6 +1756,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1764,6 +1800,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -1808,6 +1845,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         102
@@ -1860,6 +1898,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         44818
@@ -1920,6 +1959,7 @@
       "checkin": [
         "litedev.hik-connect.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -1971,6 +2011,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -2009,6 +2050,7 @@
         "dhcp",
         "snmp",
         "mdns",
+        "coap",
         "ntp"
       ],
       "dhcp_class": "APC",
@@ -2017,6 +2059,9 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [
+        5683
+      ],
       "ports": [
         80
       ],
@@ -2059,6 +2104,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -2097,6 +2143,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80
       ],
@@ -2140,6 +2187,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -2178,6 +2226,7 @@
       ],
       "ssdp_st": "urn:schemas-upnp-org:device:Basic:1",
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         443
@@ -2208,6 +2257,8 @@
         "garp",
         "dhcp",
         "mdns",
+        "mqtt",
+        "coap",
         "dns_checkin",
         "tls_checkin",
         "ntp"
@@ -2221,10 +2272,14 @@
       "checkin": [
         "updates.multitech.net"
       ],
+      "udp_ports": [
+        5683
+      ],
       "ports": [
         22,
         80,
-        443
+        443,
+        1883
       ],
       "http_server": "lighttpd",
       "http_auth": "Basic",
@@ -2263,6 +2318,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         4840
@@ -2309,6 +2365,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         20000
       ],
@@ -2340,13 +2397,16 @@
         "dhcp",
         "lldp",
         "iec104",
+        "iec61850",
         "ntp"
       ],
       "dhcp_class": "",
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
+        102,
         2404
       ],
       "snmp": {
@@ -2383,6 +2443,7 @@
         "dhcp",
         "fox",
         "bacnet_whois",
+        "mqtt",
         "dns_checkin",
         "ntp"
       ],
@@ -2392,9 +2453,11 @@
       "checkin": [
         "accounts.niagara-community.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
+        1883,
         1911
       ],
       "http_server": "GoAhead-Webs",
@@ -2439,6 +2502,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -2489,6 +2553,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         5007
@@ -2539,6 +2604,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -2589,6 +2655,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -2646,6 +2713,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502
@@ -2698,6 +2766,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502,
@@ -2746,6 +2815,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502,
@@ -2800,6 +2870,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         502,
@@ -2862,6 +2933,7 @@
       ],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         4840
@@ -2915,6 +2987,7 @@
       "mdns": [],
       "ssdp_st": null,
       "checkin": [],
+      "udp_ports": [],
       "ports": [
         80,
         44818
@@ -2976,6 +3049,7 @@
       "checkin": [
         "devicecloud.philips.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -3029,6 +3103,7 @@
       "checkin": [
         "gehealthcare.com"
       ],
+      "udp_ports": [],
       "ports": [
         80,
         443,
@@ -3055,6 +3130,110 @@
         "D8:93:41",
         "08:00:19",
         "D8:28:C9"
+      ]
+    },
+    {
+      "id": "schneider_knx",
+      "category": "building_automation",
+      "label": "Schneider KNX/IP building gateway",
+      "vendors": [
+        "Schneider Electric"
+      ],
+      "host": "knx-gw",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "knx",
+        "mdns",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [
+        3671
+      ],
+      "ports": [
+        80,
+        443
+      ],
+      "http_server": "GoAhead-Webs",
+      "http_auth": "Basic",
+      "http_realm": "Building Controller",
+      "snmp": {
+        "descr": "Schneider KNX/IP building gateway, building controller",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Schneider",
+        "product": "Schneider KNX/IP building gateway",
+        "revision": "1.18"
+      },
+      "vendors_matched": 15,
+      "ouis": [
+        "74:F6:61",
+        "20:44:3A",
+        "9C:0E:51",
+        "00:11:00",
+        "00:0C:81",
+        "00:00:54",
+        "00:03:74",
+        "00:13:24"
+      ]
+    },
+    {
+      "id": "rockwell_mtconnect",
+      "category": "manufacturing",
+      "label": "Rockwell MTConnect cell gateway",
+      "vendors": [
+        "Rockwell Automation"
+      ],
+      "host": "mtconnect",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "mtconnect",
+        "mqtt",
+        "ntp"
+      ],
+      "dhcp_class": "",
+      "mdns": [
+        "_http._tcp"
+      ],
+      "ssdp_st": null,
+      "checkin": [],
+      "udp_ports": [],
+      "ports": [
+        80,
+        1883,
+        7878
+      ],
+      "http_server": "nginx",
+      "http_auth": "Basic",
+      "http_realm": "Cell Gateway",
+      "snmp": {
+        "descr": "Rockwell MTConnect cell gateway, manufacturing cell gateway",
+        "pen": 0
+      },
+      "identity": {
+        "vendor": "Rockwell",
+        "product": "Rockwell MTConnect cell gateway",
+        "revision": "3.2"
+      },
+      "vendors_matched": 14,
+      "ouis": [
+        "08:61:95",
+        "00:00:BC",
+        "F4:54:33",
+        "34:C0:F9",
+        "5C:88:16",
+        "BC:F4:99",
+        "5C:21:67",
+        "E4:90:69"
       ]
     }
   ]

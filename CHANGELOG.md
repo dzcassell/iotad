@@ -9,9 +9,40 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ### Planned
 
-- Additional protocol conformance tests using Wireshark/tshark dissectors.
-- VLAN and network-zone modeling.
-- Additional industrial protocols and facility scenarios.
+- Automated validation from an external probe host on each lab segment.
+- Role-aware controller-to-device relationships and production-line topology.
+- Additional IEC 61850 services and layer-2 substation traffic.
+
+## [0.3.0] - 2026-08-21
+
+### Added
+
+- GitHub Actions CI for compilation, unit tests, catalog reproducibility,
+  credential-pattern scanning, PCAP generation, and tshark analysis.
+- Scapy-based PCAP protocol-family validator.
+- Atomic JSON runtime metrics with transmitter, responder, site, zone, VLAN,
+  facility, scenario, and device-population data.
+- Optional per-site 802.1Q VLAN tagging and zone labels.
+- Weighted pharmaceutical clean-room, hospital, automotive manufacturing, and
+  water-treatment facility templates.
+- MQTT/Sparkplug-style telemetry, CoAP sensor reads, KNXnet/IP discovery,
+  IEC 61850 MMS initiation, and MTConnect HTTP/XML traffic.
+- Controlled shift-change, maintenance, alarm, environmental-excursion,
+  firmware-update, and device-failure events.
+- Additional KNX building gateway and MTConnect manufacturing gateway profiles.
+
+### Changed
+
+- Vendor TLS check-ins now use deterministic TEST-NET destinations while
+  retaining realistic DNS queries and SNI, preventing accidental vendor contact
+  and eliminating blocking public-DNS resolution.
+- Facility presets now use deterministic weighted category populations.
+- Expanded catalog and protocol regression coverage.
+
+### Fixed
+
+- Slow or unavailable public DNS blocking `--once` and PCAP generation.
+- Metrics reads racing transmitter counter updates.
 
 ## [0.2.0] - 2026-08-21
 

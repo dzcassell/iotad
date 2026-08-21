@@ -276,7 +276,7 @@ PROFILES = [
     # ---- environmental / rack sensors ----
     dict(id="apc_netbotz", category="environmental", label="APC NetBotz rack sensor",
          vendors=[r"American Power Conversion", r"NetBotz"], host="netbotz",
-         beacons=["garp", "dhcp", "snmp", "mdns"],
+         beacons=["garp", "dhcp", "snmp", "mdns", "coap"],
          dhcp_class="APC",
          mdns=["_http._tcp"], ssdp_st=None, checkin=[]),
     dict(id="akcp_sensor", category="environmental", label="AKCP sensorProbe monitor",
@@ -305,7 +305,7 @@ PROFILES = [
     # ---- wireless / IoT gateways ----
     dict(id="multitech_lora", category="iot_gateway", label="MultiTech LoRaWAN gateway",
          vendors=[r"Multi-Tech Systems", r"MultiTech"], host="mtcdt-lora",
-         beacons=["garp", "dhcp", "mdns", "dns_checkin", "tls_checkin"],
+         beacons=["garp", "dhcp", "mdns", "mqtt", "coap", "dns_checkin", "tls_checkin"],
          dhcp_class="",
          mdns=["_http._tcp", "_ssh._tcp"],
          ssdp_st=None, checkin=["updates.multitech.net"]),
@@ -324,13 +324,13 @@ PROFILES = [
          dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
     dict(id="abb_rtu", category="rtu", label="ABB substation RTU",
          vendors=[r"^ABB", r"ABB "], host="abb-rtu",
-         beacons=["garp", "dhcp", "lldp", "iec104"],
+         beacons=["garp", "dhcp", "lldp", "iec104", "iec61850"],
          dhcp_class="", mdns=[], ssdp_st=None, checkin=[]),
 
     # ---- Niagara Fox / Tridium building controllers ----
     dict(id="tridium_jace", category="building_automation", label="Tridium JACE controller",
          vendors=[r"Tridium"], host="jace",
-         beacons=["garp", "dhcp", "fox", "bacnet_whois", "dns_checkin"],
+         beacons=["garp", "dhcp", "fox", "bacnet_whois", "mqtt", "dns_checkin"],
          dhcp_class="niagara",
          mdns=[], ssdp_st=None, checkin=["accounts.niagara-community.com"]),
 
@@ -395,6 +395,16 @@ PROFILES = [
          vendors=[r"General Electric", r"GE Healthcare"], host="dicom-ws",
          beacons=["garp", "dhcp", "dicom", "hl7", "dns_checkin"],
          dhcp_class="", mdns=[], ssdp_st=None, checkin=["gehealthcare.com"]),
+    dict(id="schneider_knx", category="building_automation",
+         label="Schneider KNX/IP building gateway",
+         vendors=[r"Schneider Electric"], host="knx-gw",
+         beacons=["garp", "dhcp", "knx", "mdns"],
+         dhcp_class="", mdns=["_http._tcp"], ssdp_st=None, checkin=[]),
+    dict(id="rockwell_mtconnect", category="manufacturing",
+         label="Rockwell MTConnect cell gateway",
+         vendors=[r"Rockwell Automation"], host="mtconnect",
+         beacons=["garp", "dhcp", "lldp", "mtconnect", "mqtt"],
+         dhcp_class="", mdns=["_http._tcp"], ssdp_st=None, checkin=[]),
 ]
 
 
@@ -407,7 +417,9 @@ PROTO_TCP_PORT = {
     "modbus": 502, "s7": 102, "enip": 44818, "opcua": 4840,
     "dnp3": 20000, "fox": 1911, "iec104": 2404, "melsec": 5007,
     "hartip": 5094, "cip_safety": 44818, "dicom": 11112, "hl7": 2575,
+    "mqtt": 1883, "iec61850": 102, "mtconnect": 7878,
 }
+PROTO_UDP_PORT = {"coap": 5683, "knx": 3671}
 MDNS_TCP_PORT = {
     "_http._tcp": 80, "_https._tcp": 443, "_rtsp._tcp": 554,
     "_ipp._tcp": 631, "_ipps._tcp": 631, "_pdl-datastream._tcp": 9100,
@@ -426,6 +438,7 @@ CATEGORY_BASE_PORTS = {
     "cleanroom": [80, 502], "instrumentation": [80, 502],
     "water_treatment": [80, 502], "drive": [80, 502],
     "robotics": [80, 4840], "safety": [80, 44818], "medical": [80, 443],
+    "manufacturing": [80, 7878],
 }
 # HTTP Server: header the device's web UI returns (embedded-web-server flavored).
 HTTP_BANNER = {
@@ -449,6 +462,7 @@ CATEGORY_HTTP_DEFAULT = {
     "cleanroom": "GoAhead-Webs", "instrumentation": "GoAhead-Webs",
     "water_treatment": "GoAhead-Webs", "drive": "GoAhead-Webs",
     "robotics": "GoAhead-Webs", "safety": "GoAhead-Webs", "medical": "nginx",
+    "manufacturing": "nginx",
 }
 # HTTP auth challenge: an embedded device's web UI answers "/" with 401 +
 # WWW-Authenticate, and the realm string is a routinely-scanned fingerprint.
@@ -496,6 +510,7 @@ CATEGORY_HTTP_REALM = {
     "robotics": ("Basic", "Robot Controller"),
     "safety": ("Basic", "Safety Controller"),
     "medical": ("Basic", "Clinical Device"),
+    "manufacturing": ("Basic", "Cell Gateway"),
 }
 # SNMP sysDescr: the single richest fingerprint field. Real device-class strings
 # (not impersonating a specific unit's identity). {label} = the profile label.
@@ -518,6 +533,7 @@ SNMP_DESCR = {
     "robotics": "{label}, robot controller",
     "safety": "{label}, safety controller",
     "medical": "{label}, networked clinical device",
+    "manufacturing": "{label}, manufacturing cell gateway",
 }
 # Enterprise PEN (1.3.6.1.4.1.<PEN>) only where confidently known; otherwise the
 # responder returns 0.0 ("unknown") rather than risk a misclassifying OID.
@@ -584,6 +600,8 @@ def enrich(p):
     for b in p.get("beacons", []):
         if b in PROTO_TCP_PORT:
             ports.add(PROTO_TCP_PORT[b])
+    p["udp_ports"] = sorted({PROTO_UDP_PORT[b] for b in p.get("beacons", [])
+                             if b in PROTO_UDP_PORT})
     for svc in p.get("mdns", []):
         if svc in MDNS_TCP_PORT:
             ports.add(MDNS_TCP_PORT[svc])

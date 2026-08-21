@@ -48,7 +48,10 @@ class ProtocolTests(unittest.TestCase):
         cls.cfg.interface = "eth0"
         profile = {
             "id": "test", "label": "Test controller", "category": "plc",
-            "ports": [80, 502], "beacons": ["mdns", "modbus", "ntp"],
+            "ports": [80, 102, 502, 1883, 1911, 2404, 2575, 4840, 5007,
+                      5094, 7878, 11112, 20000],
+            "udp_ports": [3671, 5683],
+            "beacons": ["mdns", "modbus", "ntp"],
             "mdns": ["_http._tcp"], "checkin": ["example.invalid"],
             "identity": {"vendor": "Lab", "product": "Controller", "revision": "1.0"},
         }
@@ -117,6 +120,46 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(responder.bacnet_replies, 1)
         self.assertEqual(responder.profinet_replies, 1)
 
+    def test_added_protocol_conversations(self):
+        checks = {
+            "mqtt": 6, "coap": 2, "knx": 2, "iec61850": 6, "mtconnect": 6,
+        }
+        for name, expected in checks.items():
+            with self.subTest(protocol=name):
+                frames = getattr(self.em, name)(self.client)
+                self.assertEqual(len(frames), expected)
+                self.assertTrue(any(f.pkt.haslayer(iotad.Raw) for f in frames))
+
+    def test_scenario_events_cycle(self):
+        events = [self.em.scenario_event(self.client) for _ in range(6)]
+        self.assertTrue(all(event is not None for event in events))
+
+    def test_vlan_tagging_in_pcap(self):
+        old_vlan = self.site_a.vlan
+        old_path = getattr(self.cfg, "pcap_path", None)
+        with tempfile.NamedTemporaryFile(suffix=".pcap", delete=False) as f:
+            path = f.name
+        try:
+            self.site_a.vlan = 123
+            self.cfg.pcap_path = path
+            tx = iotad.Tx(self.cfg)
+            tx.send("test", self.em.garp(self.client), "eth0")
+            tx.close()
+            packets = iotad.rdpcap(path)
+            self.assertEqual(packets[0][iotad.Dot1Q].vlan, 123)
+        finally:
+            self.site_a.vlan = old_vlan
+            self.cfg.pcap_path = old_path
+            os.unlink(path)
+
+    def test_metrics_snapshot(self):
+        responder = iotad.Responder(self.cfg, [self.client, self.server], self.tx)
+        metrics = iotad.MetricsReporter(self.cfg, [self.client, self.server],
+                                        self.tx, [responder]).snapshot()
+        self.assertEqual(metrics["devices"], 2)
+        self.assertIn("transmitter", metrics)
+        self.assertEqual(len(metrics["sites"]), 2)
+
 
 class CatalogTests(unittest.TestCase):
     def test_catalog_has_facility_profiles(self):
@@ -125,6 +168,21 @@ class CatalogTests(unittest.TestCase):
         categories = {p["category"] for p in profiles}
         self.assertTrue({"medical", "robotics", "cleanroom", "water_treatment"} <= categories)
         self.assertTrue(all("ntp" in p["beacons"] for p in profiles))
+        beacons = {b for p in profiles for b in p["beacons"]}
+        self.assertTrue({"mqtt", "coap", "knx", "iec61850", "mtconnect"} <= beacons)
+
+    def test_weighted_facility_roster_is_scoped_and_deterministic(self):
+        with open(os.path.join(HERE, "catalog.json")) as f:
+            catalog = json.load(f)
+        cfg = iotad.Config(None)
+        cfg.facility = "automotive"
+        cfg.device_count = 40
+        first = iotad.build_roster(catalog, cfg)
+        second = iotad.build_roster(catalog, cfg)
+        allowed = set(iotad.FACILITY_WEIGHTS["automotive"])
+        self.assertTrue(all(d.profile["category"] in allowed for d in first))
+        self.assertEqual([(d.ip, d.mac, d.profile["id"]) for d in first],
+                         [(d.ip, d.mac, d.profile["id"]) for d in second])
 
 
 if __name__ == "__main__":
