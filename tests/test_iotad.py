@@ -154,6 +154,43 @@ class ProtocolTests(unittest.TestCase):
         finally:
             self.cfg.suspicious_behaviors = old_behaviors
 
+    def test_indication_dns_shapes(self):
+        old_behaviors = self.cfg.suspicious_behaviors
+        try:
+            expected = {
+                "long_dns": lambda p: len(bytes(p[iotad.DNSQR].qname)) > 150,
+                "nxdomain_dns": lambda p: bytes(p[iotad.DNSQR].qname).endswith(b".invalid."),
+                "local_domain_dns": lambda p: bytes(p[iotad.DNSQR].qname).endswith(b".local."),
+                "dyndns_dns": lambda p: bytes(p[iotad.DNSQR].qname).endswith(b".duckdns.org."),
+            }
+            for behavior, check in expected.items():
+                with self.subTest(behavior=behavior):
+                    self.cfg.suspicious_behaviors = [behavior]
+                    pkt = self.em.suspicious_beacon(self.client)
+                    self.assertTrue(check(pkt))
+        finally:
+            self.cfg.suspicious_behaviors = old_behaviors
+
+    def test_indication_protocol_conversations(self):
+        old_behaviors = self.cfg.suspicious_behaviors
+        try:
+            for behavior, port, marker in (
+                    ("ftp_transfer", 21, b"STOR diagnostics.bin"),
+                    ("smb_transfer", 445, b"\xfeSMB"),
+                    ("ssh_low_popularity", 22, b"SSH-2.0-PuTTY"),
+                    ("ssh_nonstandard", 2222, b"SSH-2.0-PuTTY")):
+                with self.subTest(behavior=behavior):
+                    self.cfg.suspicious_behaviors = [behavior]
+                    frames = self.em.suspicious_beacon(self.client)
+                    self.assertEqual(len(frames), 6)
+                    self.assertEqual({f.iface for f in frames}, {"eth0", "eth1"})
+                    self.assertTrue(any(f.pkt[iotad.TCP].dport == port for f in frames))
+                    self.assertTrue(any(f.pkt.haslayer(iotad.Raw) and
+                                        marker in bytes(f.pkt[iotad.Raw].load)
+                                        for f in frames))
+        finally:
+            self.cfg.suspicious_behaviors = old_behaviors
+
     def test_vlan_tagging_in_pcap(self):
         old_vlan = self.site_a.vlan
         old_path = getattr(self.cfg, "pcap_path", None)
@@ -179,6 +216,10 @@ class ProtocolTests(unittest.TestCase):
         self.assertEqual(metrics["devices"], 2)
         self.assertIn("transmitter", metrics)
         self.assertEqual(len(metrics["sites"]), 2)
+        self.assertEqual(len(iotad.BEHAVIOR_INDICATIONS), 8)
+        targets = {value for values in iotad.BEHAVIOR_INDICATIONS.values()
+                   for value in values}
+        self.assertEqual(len(targets), 12)
 
 
 class CatalogTests(unittest.TestCase):

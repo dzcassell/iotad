@@ -16,6 +16,10 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   a China target preference for suspicious traffic.
 - Suspicious-device, country, behavior, and rate-limit counters in runtime
   metrics.
+- Eight safe indication-oriented generators targeting twelve Cato detection
+  IDs: long, NXDOMAIN, local-domain, and Dynamic-DNS queries plus complete
+  cross-site FTP, SMB, standard SSH, and nonstandard-port SSH conversations.
+- Per-indication target and emission counters in runtime metrics.
 
 ### Changed
 

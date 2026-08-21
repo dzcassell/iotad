@@ -167,9 +167,9 @@ IoT/OT traffic.
   `*_targets` values are comma-separated IPv4 destinations. Shipped defaults
   are documented public DNS services: AliDNS, Shecan, and Yandex DNS.
 - `behaviors` selects `geo_dns`, `dga_dns`, `dns_tunnel`, and/or
-  `port_beacon`. DNS behavior uses the reserved `.invalid` namespace and no
-  real or simulated sensitive data. `port_beacon` sends one TCP SYN to a port
-  selected from `beacon_ports`; it does not exploit or authenticate.
+  `port_beacon`, plus the indication-oriented behaviors below. DNS behavior
+  carries no real or simulated sensitive data. `port_beacon` sends one TCP SYN
+  to a port selected from `beacon_ports`; it does not exploit or authenticate.
 - Suspicious traffic requires `[outbound] enabled = true` and `scope = wan` or
   `both`. Country, behavior, selected-device, and rate-limit counters appear
   in `/run/iotad/metrics.json`.
@@ -185,6 +185,29 @@ custom indicators if a guaranteed anti-bot/reputation event is required.
 > This mode intentionally sends traffic beyond the lab. Review the destination
 > list and policy first. Prefer addresses you control if the lab is used for
 > sustained or higher-rate testing.
+
+#### Cato indication-oriented signals
+
+The default behavior list targets these twelve indication IDs. “Targets” means
+the simulator produces the described observable; anomaly engines still depend
+on account history, baselines, thresholds, policy, retention, and application
+identification, so an event is not guaranteed on the first packet.
+
+| Behavior | Generated observable | Target indication IDs |
+|---|---|---|
+| `long_dns` | TXT query longer than 150 characters to an external resolver | `chaser_long_dns_queries` |
+| `nxdomain_dns` | Unique query below the reserved `.invalid` TLD, expected to return NXDOMAIN | `hunt_dns_response_code` |
+| `local_domain_dns` | `.local` name sent to an external resolver | `outbound_local_domain_dns_queries` |
+| `dyndns_dns` | Repeated per-device query below `duckdns.org` | `hunt_dyndns_traffic`, `hunt_DynamicDNS_dns_traffic` |
+| `ftp_transfer` | Complete FTP control session with a simulated `STOR` across sites | `ftp_client_first_time_site_wan`, `ftp_events_anomaly_site` |
+| `smb_transfer` | Complete TCP/445 SMB2-signature conversation across sites | `lan_file_transfer_protocols_first_seen`, `lan_file_transfer_protocols_activity` |
+| `ssh_low_popularity` | Complete SSH banner exchange between simulated devices across sites | `suspicious_protocol_communication` |
+| `ssh_nonstandard` | SSH banner exchange on TCP/2222 across sites | `nonstandard_ports_first_seen_site`, `hunt_abnormal_protocol_use` |
+
+The dynamic-DNS story explicitly requires at least two days according to the
+indication description. The simulator excludes blacklist, sinkhole, Emotet,
+malware-certificate, PsExec, and rclone indicators because those require live
+threat intelligence, real tool fingerprints, or unsafe third-party targets.
 
 ## Run
 
