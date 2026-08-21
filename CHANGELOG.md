@@ -13,6 +13,8 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
   real macvlan LAN identity and bounded DNS, NTP, HTTP/S, FTP, SSH, Telnet,
   SMB, artifact-transfer, beacon, and upload services.
 - Container health reporting and endpoint protocol regression tests.
+- Failure-isolated, 15-minute real-socket campaign traffic through the Cato
+  allocated public/RPF address `149.20.200.136`.
 
 ### Planned
 

@@ -286,12 +286,18 @@ and 123 (NTP). HTTP exposes `/healthz`, `/beacon`, `/artifact.bin?size=N`, and
 a bounded POST upload receiver. Artifact and upload bodies are capped at 1 MiB
 by default. All content is synthetic and contains no malware or exploit code.
 
+The companion `iotad-rpf-campaign` container uses the host's HQ-side route to
+exercise the allocated Cato public IP `149.20.200.136` every 15 minutes. Each
+protocol check is isolated: an unavailable TCP/UDP mapping is recorded without
+causing a restart loop or suppressing the remaining checks.
+
 Deploy or update it from the repository root:
 
 ```sh
 docker compose -f endpoint/compose.yaml up -d --build
 docker compose -f endpoint/compose.yaml ps
 docker inspect --format '{{json .State.Health}}' iotad-rpf-endpoint
+docker logs --tail 1 iotad-rpf-campaign
 ```
 
 Suggested Cato RPF mappings preserve the application ports:
@@ -302,9 +308,8 @@ Suggested Cato RPF mappings preserve the application ports:
 | UDP 53, 123 | Same port on `192.168.7.20` |
 
 Use an RPF allow list restricted to the lab's Cato egress addresses. Do not
-publish the endpoint to `0.0.0.0/0`. After the allocated RPF public IP is known,
-configure iotad campaigns to use that address; do not target the private
-`192.168.7.20` address when the objective is to traverse Cato's public edge.
+publish the endpoint to `0.0.0.0/0`. The campaign targets the public RPF address,
+not private `192.168.7.20`, so the flow traverses Cato's public edge.
 
 ## Refresh the OUI database
 
