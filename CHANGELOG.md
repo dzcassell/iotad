@@ -7,6 +7,13 @@ and the project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 
 ## [Unreleased]
 
+### Added
+
+- Controlled Docker endpoint for Cato Remote Port Forwarding campaigns with a
+  real macvlan LAN identity and bounded DNS, NTP, HTTP/S, FTP, SSH, Telnet,
+  SMB, artifact-transfer, beacon, and upload services.
+- Container health reporting and endpoint protocol regression tests.
+
 ### Planned
 
 - Automated validation from an external probe host on each lab segment.

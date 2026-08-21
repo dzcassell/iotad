@@ -269,6 +269,43 @@ Verify it on the wire from another host or the same box:
 sudo tcpdump -i enp10s0 -nn -e 'arp or port 5353 or port 47808 or ether proto 0x88cc'
 ```
 
+## Controlled Remote Port Forwarding endpoint
+
+`endpoint/` contains a hardened lab-only Docker service intended to sit behind
+a Cato Remote Port Forwarding rule. The deployed lab defaults give it a real
+plant-LAN identity on `enp8s0f0`:
+
+- IP address: `192.168.7.20`
+- MAC address: `02:49:4f:54:41:20`
+- Gateway: `192.168.7.1`
+- Docker network: macvlan `iotad-rpf-plant`
+
+The endpoint listens on TCP 21 (FTP), 22 (SSH), 23 (Telnet), 53 (DNS), 80
+(HTTP), 443 (HTTPS), 445 (SMB), and 2222 (nonstandard SSH), plus UDP 53 (DNS)
+and 123 (NTP). HTTP exposes `/healthz`, `/beacon`, `/artifact.bin?size=N`, and
+a bounded POST upload receiver. Artifact and upload bodies are capped at 1 MiB
+by default. All content is synthetic and contains no malware or exploit code.
+
+Deploy or update it from the repository root:
+
+```sh
+docker compose -f endpoint/compose.yaml up -d --build
+docker compose -f endpoint/compose.yaml ps
+docker inspect --format '{{json .State.Health}}' iotad-rpf-endpoint
+```
+
+Suggested Cato RPF mappings preserve the application ports:
+
+| External | Internal destination |
+|---|---|
+| TCP 21, 22, 23, 53, 80, 443, 445, 2222 | Same port on `192.168.7.20` |
+| UDP 53, 123 | Same port on `192.168.7.20` |
+
+Use an RPF allow list restricted to the lab's Cato egress addresses. Do not
+publish the endpoint to `0.0.0.0/0`. After the allocated RPF public IP is known,
+configure iotad campaigns to use that address; do not target the private
+`192.168.7.20` address when the objective is to traverse Cato's public edge.
+
 ## Refresh the OUI database
 
 The vendor prefixes come from IEEE, so they stay authentic. To update or add
