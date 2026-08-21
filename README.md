@@ -33,6 +33,7 @@ L2/L3 traffic those devices would emit.
 | Power / UPS | APC, Vertiv/Liebert | SNMP trap, DHCP |
 | Environmental / rack sensors | APC NetBotz, AKCP, Sensaphone | SNMP trap, mDNS, DHCP |
 | Wireless / IoT gateways | MultiTech (LoRaWAN) | mDNS, cloud DNS/TLS, DHCP |
+| Industrial IoT gateways | Huawei | MQTT, LLDP, cloud DNS/TLS, suspicious geo-beacon preference |
 | Lighting | Lutron | mDNS, DHCP |
 | Clean-room systems | Siemens FFU controllers, gas/environment monitors | PROFINET, Modbus, BACnet, SNMP |
 | Process utilities | RO/DI skids, process instruments, VFDs | Modbus, OPC UA, HART-IP, EtherNet/IP |
@@ -113,7 +114,7 @@ single-site behavior is unchanged.
 /opt/iotad/
   iotad.py          the daemon
   build_catalog.py  filters the IEEE registry -> catalog.json
-  catalog.json      generated: 65 profiles, 340 authentic OUIs
+  catalog.json      generated: 66 profiles, 348 authentic OUIs
   oui.csv           IEEE OUI registry (refreshable)
   iotad.conf        sample config (installed to /etc/iotad.conf)
   iotad.service     systemd unit
@@ -151,6 +152,39 @@ Edit `/etc/iotad.conf`. The important knobs:
 - Per-site `zone` labels appear in metrics. Per-site `vlan` can be `0` for
   untagged traffic or `1..4094` to insert an 802.1Q tag. Sites sharing one
   interface must use the same VLAN.
+
+### Suspicious traffic mode
+
+`[suspicious] enabled = true` by default. A deterministic 10% of the roster
+(including Huawei devices first) emits low-rate, deliberately suspicious WAN
+signals. Set `enabled = false` to disable the feature without changing normal
+IoT/OT traffic.
+
+- `device_fraction`, `interval`, and the independent `max_pps` ceiling bound
+  participation, cadence, and burst rate. The normal `[runtime] max_pps` cap
+  still applies to all frames.
+- `countries` selects `china`, `iran`, and/or `russia`; the matching
+  `*_targets` values are comma-separated IPv4 destinations. Shipped defaults
+  are documented public DNS services: AliDNS, Shecan, and Yandex DNS.
+- `behaviors` selects `geo_dns`, `dga_dns`, `dns_tunnel`, and/or
+  `port_beacon`. DNS behavior uses the reserved `.invalid` namespace and no
+  real or simulated sensitive data. `port_beacon` sends one TCP SYN to a port
+  selected from `beacon_ports`; it does not exploit or authenticate.
+- Suspicious traffic requires `[outbound] enabled = true` and `scope = wan` or
+  `both`. Country, behavior, selected-device, and rate-limit counters appear
+  in `/run/iotad/metrics.json`.
+
+For deterministic Cato demo events, configure Internet Firewall or IPS Geo
+Restriction rules for these destination countries and enable event tracking.
+DNS Protection may also classify the algorithmic or tunnel-shaped queries,
+but heuristic verdicts are policy- and traffic-dependent. TLS Inspection is
+recommended where relevant. The simulator intentionally does not ship malware,
+exploit payloads, known C2 domains, or credentials; use customer-controlled
+custom indicators if a guaranteed anti-bot/reputation event is required.
+
+> This mode intentionally sends traffic beyond the lab. Review the destination
+> list and policy first. Prefer addresses you control if the lab is used for
+> sustained or higher-rate testing.
 
 ## Run
 
@@ -191,8 +225,9 @@ tshark -r /tmp/iotad.pcap -q -z io,phs
 
 The daemon atomically refreshes `/run/iotad/metrics.json` by default. The JSON
 contains uptime, facility/scenario selection, site/zone/VLAN metadata, device
-counts, transmitter totals, rate-limit waits, send failures, and responder
-counters. `metrics_file` and `metrics_interval` are configurable under
+counts, transmitter totals, rate-limit waits, send failures, suspicious traffic
+country/behavior totals, and responder counters. `metrics_file` and
+`metrics_interval` are configurable under
 `[runtime]`.
 
 ## Continuous integration

@@ -20,6 +20,7 @@ and are authorized to test. See README.md.
     iotad.py --dry-run                        # build + schedule, print, never transmit
 """
 import argparse
+import base64
 import configparser
 import ipaddress
 import json
@@ -106,6 +107,7 @@ BEACON_INTERVAL = {
     "tls_checkin": ("checkin", 0),
 }
 WAN_BEACONS = {"tls_checkin"}  # only run these when outbound scope includes WAN
+SUSPICIOUS_BEACON = "suspicious_beacon"
 
 FACILITY_CATEGORIES = {
     "industrial": {"plc", "rtu", "hmi", "industrial_networking", "drive",
@@ -224,6 +226,26 @@ class Config:
             sec = f"site:{site.name}" if f"site:{site.name}" in cp else "network"
             site.dns_server = cp[sec].get("dns_server", fallback=self.dns_server)
 
+        x = cp["suspicious"]
+        self.suspicious_enabled = x.getboolean("enabled")
+        self.suspicious_device_fraction = x.getfloat("device_fraction")
+        self.suspicious_interval = x.getint("interval")
+        self.suspicious_max_pps = x.getfloat("max_pps")
+        self.suspicious_countries = [
+            c.strip().lower() for c in x.get("countries").split(",") if c.strip()
+        ]
+        self.suspicious_behaviors = [
+            b.strip().lower() for b in x.get("behaviors").split(",") if b.strip()
+        ]
+        self.suspicious_targets = {
+            country: [a.strip() for a in x.get(f"{country}_targets").split(",")
+                      if a.strip()]
+            for country in ("china", "iran", "russia")
+        }
+        self.suspicious_ports = [
+            int(p.strip()) for p in x.get("beacon_ports").split(",") if p.strip()
+        ]
+
         self.timing = cp["timing"]
         r = cp["runtime"]
         self.pidfile = r.get("pidfile")
@@ -249,6 +271,24 @@ class Config:
             raise ValueError("outbound.scope must be subnet, wan, or both")
         if self.rate_limit <= 0:
             raise ValueError("runtime.max_pps must be greater than zero")
+        if not 0.0 <= self.suspicious_device_fraction <= 1.0:
+            raise ValueError("suspicious.device_fraction must be between 0 and 1")
+        if self.suspicious_interval <= 0 or self.suspicious_max_pps <= 0:
+            raise ValueError("suspicious.interval and suspicious.max_pps must be positive")
+        supported_countries = {"china", "iran", "russia"}
+        supported_behaviors = {"geo_dns", "dga_dns", "dns_tunnel", "port_beacon"}
+        if not self.suspicious_countries or not set(self.suspicious_countries) <= supported_countries:
+            raise ValueError("suspicious.countries must contain china, iran, and/or russia")
+        if not self.suspicious_behaviors or not set(self.suspicious_behaviors) <= supported_behaviors:
+            raise ValueError("suspicious.behaviors contains an unsupported behavior")
+        if not self.suspicious_ports or any(not 1 <= p <= 65535 for p in self.suspicious_ports):
+            raise ValueError("suspicious.beacon_ports must be in 1..65535")
+        for country in self.suspicious_countries:
+            if not self.suspicious_targets[country]:
+                raise ValueError(f"suspicious.{country}_targets cannot be empty")
+            for address in self.suspicious_targets[country]:
+                if ipaddress.ip_address(address).version != 4:
+                    raise ValueError("suspicious targets must be IPv4 addresses")
         names = set()
         for site in self.sites:
             if not site.name or site.name in names:
@@ -296,6 +336,15 @@ class Config:
             "outbound": {
                 "enabled": "true", "scope": "both",
                 "dns_server": "192.168.40.1", "ntp_server": "pool.ntp.org",
+            },
+            "suspicious": {
+                "enabled": "true", "device_fraction": "0.10", "interval": "300",
+                "max_pps": "2", "countries": "china, iran, russia",
+                "behaviors": "geo_dns, dga_dns, dns_tunnel, port_beacon",
+                "china_targets": "223.5.5.5, 223.6.6.6",
+                "iran_targets": "178.22.122.100, 185.51.200.2",
+                "russia_targets": "77.88.8.8, 77.88.8.1",
+                "beacon_ports": "4444, 8081, 8443",
             },
             "runtime": {
                 "pidfile": "/run/iotad.pid", "logfile": "",
@@ -360,12 +409,22 @@ def build_roster(catalog, cfg):
     devices = []
     idx = 0
     cursors = {s.name: 0 for s in cfg.sites}
+    profile_plan = None
+    if not cfg.categories and cfg.facility == "mixed" and cfg.device_count >= len(profiles):
+        # Guarantee broad protocol coverage in larger mixed labs instead of
+        # relying on random sampling to happen to include every archetype.
+        profile_plan = list(profiles)
+        rng.shuffle(profile_plan)
+        profile_plan.extend(rng.choice(profiles)
+                            for _ in range(cfg.device_count - len(profile_plan)))
     # Interleave sites so the roster (and cross-site pairing) is well mixed.
     for slot in range(max(counts)):
         for si, site in enumerate(cfg.sites):
             if slot >= counts[si]:
                 continue
-            if cfg.categories or cfg.facility == "mixed":
+            if profile_plan is not None:
+                p = profile_plan[idx]
+            elif cfg.categories or cfg.facility == "mixed":
                 p = rng.choice(profiles)
             else:
                 weights = [FACILITY_WEIGHTS[cfg.facility][p["category"]]
@@ -482,6 +541,13 @@ class Emitters:
         self.ntp_ip = None
         self.host_ips = {}
         self._event_seq = 0
+        self._suspicious_seq = 0
+        self._suspicious_lock = threading.Lock()
+        self._suspicious_tokens = float(cfg.suspicious_max_pps)
+        self._suspicious_token_time = time.monotonic()
+        self.suspicious_by_country = {}
+        self.suspicious_by_behavior = {}
+        self.suspicious_rate_drops = 0
         for dev in roster:
             for host in dev.profile.get("checkin", []) or []:
                 # Deterministic TEST-NET-3 destination: SNI/DNS stays realistic,
@@ -569,6 +635,67 @@ class Emitters:
 
     def _sub_ok(self):
         return self.cfg.outbound_enabled and self.cfg.outbound_scope in ("subnet", "both")
+
+    def _suspicious_allow(self):
+        if self.cfg.dry_run:
+            return True
+        with self._suspicious_lock:
+            now = time.monotonic()
+            elapsed = now - self._suspicious_token_time
+            self._suspicious_tokens = min(
+                float(self.cfg.suspicious_max_pps),
+                self._suspicious_tokens + elapsed * self.cfg.suspicious_max_pps)
+            self._suspicious_token_time = now
+            if self._suspicious_tokens < 1.0:
+                self.suspicious_rate_drops += 1
+                return False
+            self._suspicious_tokens -= 1.0
+            return True
+
+    def suspicious_snapshot(self):
+        with self._suspicious_lock:
+            return {
+                "enabled": self.cfg.suspicious_enabled,
+                "selected_devices": getattr(self, "suspicious_device_count", 0),
+                "by_country": dict(self.suspicious_by_country),
+                "by_behavior": dict(self.suspicious_by_behavior),
+                "rate_limited": self.suspicious_rate_drops,
+            }
+
+    def suspicious_beacon(self, dev):
+        """Emit a bounded, non-exploit suspicious signal to a public resolver."""
+        if not self.cfg.suspicious_enabled or not self._wan_ok() or not self._suspicious_allow():
+            return None
+        seq = self._suspicious_seq
+        self._suspicious_seq += 1
+        countries = self.cfg.suspicious_countries
+        country = ("china" if "huawei" in dev.profile["id"].lower() and
+                   "china" in countries else countries[(dev.idx + seq) % len(countries)])
+        behavior = self.cfg.suspicious_behaviors[seq % len(self.cfg.suspicious_behaviors)]
+        targets = self.cfg.suspicious_targets[country]
+        target = targets[(dev.idx + seq) % len(targets)]
+        with self._suspicious_lock:
+            self.suspicious_by_country[country] = self.suspicious_by_country.get(country, 0) + 1
+            self.suspicious_by_behavior[behavior] = self.suspicious_by_behavior.get(behavior, 0) + 1
+        eth = Ether(src=dev.mac, dst=self._dst_mac_for(dev, target))
+        ip = IP(src=dev.ip, dst=target)
+        if behavior == "port_beacon":
+            port = self.cfg.suspicious_ports[seq % len(self.cfg.suspicious_ports)]
+            return eth / ip / TCP(sport=40000 + (dev.idx % 20000), dport=port,
+                                  flags="S", seq=random.randint(1, 0xFFFFFFFF))
+        if behavior == "geo_dns":
+            qname, qtype = f"telemetry-{dev.serial}.iotad-lab.invalid", "A"
+        elif behavior == "dga_dns":
+            raw = struct.pack("!III", self.cfg.seed, dev.idx, seq)
+            qname = base64.b32encode(raw).decode().rstrip("=").lower() + ".update.invalid"
+            qtype = "A"
+        else:
+            raw = struct.pack("!III", dev.idx, seq, int(time.time()) // 300)
+            label = (base64.b32encode(raw).decode().rstrip("=").lower() * 3)[:52]
+            qname, qtype = label + ".telemetry.invalid", "TXT"
+        return (eth / ip / UDP(sport=49152 + (dev.idx % 16000), dport=53) /
+                DNS(id=(dev.idx + seq) & 0xFFFF, rd=1,
+                    qd=DNSQR(qname=qname, qtype=qtype)))
 
     # -- discovery beacons --
     def garp(self, dev):
@@ -1669,8 +1796,9 @@ class Responder:
 class MetricsReporter:
     """Periodically writes an atomic JSON health/traffic snapshot."""
 
-    def __init__(self, cfg, roster, tx, responders):
+    def __init__(self, cfg, roster, tx, responders, emitters=None):
         self.cfg, self.roster, self.tx, self.responders = cfg, roster, tx, responders
+        self.emitters = emitters
         self.started = time.time()
         self._stop = threading.Event()
         self._thread = None
@@ -1692,6 +1820,9 @@ class MetricsReporter:
                        "zone": s.zone, "vlan": s.vlan, "subnet": str(s.subnet)}
                       for s in self.cfg.sites],
             "transmitter": self.tx.snapshot(),
+            "suspicious": (self.emitters.suspicious_snapshot() if self.emitters else {
+                "enabled": self.cfg.suspicious_enabled,
+            }),
             "responders": [r.snapshot() for r in self.responders],
         }
 
@@ -1738,6 +1869,18 @@ class Scheduler:
         self.heap = []
         self.seq = 0
         self.running = True
+        count = int(round(len(roster) * cfg.suspicious_device_fraction))
+        if cfg.suspicious_enabled and cfg.suspicious_device_fraction > 0 and roster:
+            count = max(1, min(len(roster), count))
+            rng = random.Random(cfg.seed ^ 0x51A1C10)
+            huawei = [d for d in roster if "huawei" in d.profile["id"].lower()]
+            others = [d for d in roster if d not in huawei]
+            rng.shuffle(huawei)
+            rng.shuffle(others)
+            self.suspicious_devices = (huawei + others)[:count]
+        else:
+            self.suspicious_devices = []
+        self.em.suspicious_device_count = len(self.suspicious_devices)
 
     @staticmethod
     def _diurnal():
@@ -1752,6 +1895,9 @@ class Scheduler:
         return 2.2              # 23:00-06:00: quietest
 
     def _interval(self, beacon):
+        if beacon == SUSPICIOUS_BEACON:
+            return (self.cfg.suspicious_interval * random.uniform(0.75, 1.25) *
+                    self._diurnal() * SCENARIO_CADENCE[self.cfg.scenario])
         key, default = BEACON_INTERVAL[beacon]
         if key == "checkin":
             lo = self.cfg.timing.getint("checkin_min")
@@ -1779,6 +1925,10 @@ class Scheduler:
             stride = max(1, len(self.roster) // 20)
             for dev in self.roster[::stride]:
                 self._schedule(now + random.uniform(5, 30), dev, "scenario_event")
+        if self.cfg.suspicious_enabled and self.em._wan_ok():
+            for dev in self.suspicious_devices:
+                self._schedule(now + random.uniform(10, min(self.cfg.suspicious_interval, 180)),
+                               dev, SUSPICIOUS_BEACON)
 
     def emit(self, dev, beacon):
         fn = getattr(self.em, beacon, None)
@@ -1808,6 +1958,9 @@ class Scheduler:
             stride = max(1, len(self.roster) // 20)
             for dev in self.roster[::stride]:
                 self.emit(dev, "scenario_event")
+        if self.cfg.suspicious_enabled and self.em._wan_ok():
+            for dev in self.suspicious_devices:
+                self.emit(dev, SUSPICIOUS_BEACON)
 
     def run(self):
         now = time.monotonic()
@@ -1952,7 +2105,7 @@ def main():
 
     for r in responders:
         r.start()
-    metrics = MetricsReporter(cfg, roster, tx, responders)
+    metrics = MetricsReporter(cfg, roster, tx, responders, emitters)
     metrics.start()
     try:
         sched.run()

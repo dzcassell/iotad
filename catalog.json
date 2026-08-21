@@ -850,6 +850,56 @@
       ]
     },
     {
+      "id": "huawei_iot_gateway",
+      "category": "iot_gateway",
+      "label": "Huawei industrial IoT gateway",
+      "vendors": [
+        "Huawei"
+      ],
+      "host": "huawei-iot",
+      "beacons": [
+        "garp",
+        "dhcp",
+        "lldp",
+        "mqtt",
+        "dns_checkin",
+        "tls_checkin",
+        "ntp"
+      ],
+      "dhcp_class": "HUAWEI-IoT-Gateway",
+      "mdns": [],
+      "ssdp_st": null,
+      "checkin": [
+        "iot-device-management.huaweicloud.com"
+      ],
+      "udp_ports": [],
+      "ports": [
+        22,
+        80,
+        443,
+        1883
+      ],
+      "http_server": "lighttpd",
+      "http_auth": "Basic",
+      "http_realm": "Gateway",
+      "identity": {
+        "vendor": "Huawei",
+        "product": "Huawei industrial IoT gateway",
+        "revision": "5.34"
+      },
+      "vendors_matched": 2048,
+      "ouis": [
+        "E0:06:30",
+        "D8:DA:F1",
+        "54:44:3B",
+        "5C:70:75",
+        "78:2D:AD",
+        "D0:61:58",
+        "24:4B:F1",
+        "F0:A0:B1"
+      ]
+    },
+    {
       "id": "hirschmann_sw",
       "category": "industrial_networking",
       "label": "Hirschmann industrial switch",
