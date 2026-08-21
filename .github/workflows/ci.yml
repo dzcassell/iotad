@@ -25,8 +25,12 @@ jobs:
           python -m pip install -r requirements.txt
       - name: Compile and test
         run: |
-          python -m py_compile iotad.py build_catalog.py tests/test_iotad.py
+          python -m py_compile iotad.py build_catalog.py endpoint/server.py endpoint/probe.py tests/test_iotad.py tests/test_endpoint.py
           python -m unittest discover -s tests -v
+      - name: Build controlled RPF endpoint
+        run: |
+          docker build -t iotad-endpoint:test endpoint
+          docker run --rm --entrypoint python iotad-endpoint:test /app/server.py --check
       - name: Verify generated catalog is current
         run: |
           python build_catalog.py --out /tmp/catalog.json
